@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Alunos — Instituto Missão Art</title>
+  <link rel="stylesheet" href="/tema.css">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+      background: #FAF7F4;
+      margin: 0;
+      color: #2A2224;
+    }
+    h2 { font-size: 14px; margin: 22px 0 4px; color: #2A2224; border-top: 0.5px solid #EFE9E4; padding-top: 16px; }
+    .area-pagina { padding: 24px 32px; }
+    .conteudo { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+    .cartao { background: #fff; border: 0.5px solid #E7E1DC; border-radius: 8px; padding: 20px; }
+    #painelForm { flex: 1; min-width: 340px; max-height: 82vh; overflow-y: auto; }
+    #painelLista { flex: 1.1; min-width: 380px; }
+    label { display: block; font-size: 12px; color: #6B615D; margin: 10px 0 4px; font-weight: 600; }
+    input, textarea { width: 100%; padding: 7px 9px; border: 1px solid #D8D1CB; border-radius: 5px; font-size: 13px; font-family: inherit; font-weight: 400; }
+    textarea { resize: vertical; min-height: 50px; }
+    .linha { display: flex; gap: 10px; }
+    .linha > div { flex: 1; }
+    .checkbox-linha { display: flex; align-items: center; gap: 6px; margin-top: 12px; }
+    .checkbox-linha input { width: auto; }
+    .checkbox-linha label { margin: 0; }
+    .checkgrupo { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 6px; }
+    .checkitem { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 400; }
+    .checkitem input { width: auto; }
+    .botoes { display: flex; gap: 8px; margin-top: 18px; position: sticky; bottom: 0; background: #fff; padding-top: 10px; }
+    button { padding: 8px 16px; border-radius: 6px; border: none; font-size: 13px; cursor: pointer; }
+    #botaoSalvar { background: #DB5A61; color: #fff; font-weight: 500; }
+    #botaoNovo { background: #F1EFE8; color: #2A2224; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; color: #9C918C; font-size: 11px; padding: 6px 8px; border-bottom: 0.5px solid #EFE9E4; }
+    td { padding: 9px 8px; border-bottom: 0.5px solid #F3EEEA; }
+    tr:hover td { background: #FAF7F4; }
+    .pill { font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: 20px; }
+    .pill-ativo { color: #3B6D11; background: #EAF3DE; }
+    .pill-inativo { color: #5F5E5A; background: #F1EFE8; }
+    .pill-lista_espera { color: #854F0B; background: #FAEEDA; }
+    .ver { cursor: pointer; color: #8C837E; font-weight: 400; }
+    #painelLista > .linha { margin-bottom: 12px; }
+    #filtroStatus, #filtroModalidade { padding: 7px 9px; border: 1px solid #D8D1CB; border-radius: 5px; font-size: 13px; font-family: inherit; }
+    .botaoStatusRapido { background: #F1EFE8; color: #2A2224; font-weight: 400; font-size: 12px; padding: 5px 10px; white-space: nowrap; }
+    .cartaoResponsavel {
+      border: 1px solid #E7E1DC; border-radius: 6px; padding: 12px; margin-top: 10px; background: #FDFBFA;
+    }
+    .cartaoResponsavel .cabecalhoResp {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;
+    }
+    .cartaoResponsavel .cabecalhoResp strong { font-size: 12px; }
+    .botaoRemover { background: none; color: #A32D2D; font-size: 12px; padding: 2px 6px; }
+    #botaoAddResponsavel { background: #F1EFE8; color: #2A2224; margin-top: 10px; font-weight: 400; }
+    .itemDocumento {
+      display: flex; align-items: center; justify-content: space-between;
+      border: 1px solid #E7E1DC; border-radius: 6px; padding: 8px 10px; margin-top: 6px; background: #FDFBFA;
+    }
+    .itemDocumento a { color: #DB5A61; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="areaLogo">
+        <img src="/img/logo.png" alt="Instituto Missão Art">
+      </div>
+      <nav>
+        <a href="/alunos.html" class="ativo">Alunos</a>
+      </nav>
+    </aside>
+
+    <div class="areaPrincipal">
+      <div id="avisoAmbiente">
+        Ambiente de TESTE — estes dados não são reais e podem ser apagados a qualquer momento.
+      </div>
+      <div class="topbar">
+        <span class="avatar" id="avatarInicial"></span>
+        <span class="nomeUsuario" id="nomeUsuario"></span>
+        <button type="button" class="botaoSair" id="botaoSair">Sair</button>
+      </div>
+
+      <div class="area-pagina">
+        <div class="conteudo">
+    <div class="cartao" id="painelForm">
+      <strong id="tituloForm">Novo aluno</strong>
+      <input type="hidden" id="alunoId">
+
+      <div id="blocoStatus" style="display:none;">
+        <h2>Status</h2>
+        <div class="linha" style="align-items:flex-end;">
+          <div>
+            <label>Status atual</label>
+            <select id="statusAtual">
+              <option value="ativo">Ativo</option>
+              <option value="lista_espera">Lista de espera</option>
+              <option value="inativo">Inativo</option>
+            </select>
+          </div>
+          <div id="linhaDataListaEspera" style="display:none;">
+            <label>Entrada na lista de espera</label>
+            <input type="date" id="dataEntradaListaEspera">
+          </div>
+          <div style="flex:0 0 auto;">
+            <button type="button" id="botaoAplicarStatus" style="background:#F1EFE8; color:#2A2224;">Aplicar status</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="blocoRematricula"></div>
+
+      <div id="blocoArquivos" style="display:none;">
+        <h2>Foto</h2>
+        <div id="previewFoto" style="font-size:12px; color:#6B615D; margin-bottom:8px;">Nenhuma foto ainda.</div>
+        <input type="file" id="inputFoto" accept="image/jpeg,image/png,image/webp">
+        <button type="button" id="botaoEnviarFoto" style="background:#F1EFE8; color:#2A2224; margin-top:8px; font-weight:400;">Enviar foto</button>
+
+        <h2>Documentos</h2>
+        <div id="listaDocumentos" style="font-size:12px;"></div>
+        <div class="linha" style="margin-top:10px; align-items:flex-end;">
+          <div><label>Tipo de documento</label><input type="text" id="tipoDocumento" placeholder="Ex: RG, comprovante de endereço"></div>
+          <div><label>Arquivo</label><input type="file" id="inputDocumento" accept="image/jpeg,image/png,image/webp,application/pdf"></div>
+        </div>
+        <button type="button" id="botaoEnviarDocumento" style="background:#F1EFE8; color:#2A2224; margin-top:8px; font-weight:400;">Anexar documento</button>
+
+        <h2>Termo de uso de imagem</h2>
+        <div id="statusTermoImagem" style="font-size:12px; color:#6B615D; margin-bottom:8px;">Nenhum registro ainda.</div>
+        <button type="button" id="botaoAceiteDigital" style="background:#F1EFE8; color:#2A2224; font-weight:400;">Registrar aceite digital</button>
+        <label style="margin-top:14px;">Ou envie o PDF/foto assinado</label>
+        <input type="file" id="inputTermoImagem" accept="image/jpeg,image/png,image/webp,application/pdf">
+        <button type="button" id="botaoEnviarTermoImagem" style="background:#F1EFE8; color:#2A2224; margin-top:8px; font-weight:400;">Enviar arquivo assinado</button>
+      </div>
+
+      <h2>Dados principais</h2>
+      <label>Nome completo *</label>
+      <input type="text" id="nome">
+      <div class="linha">
+        <div><label>RG</label><input type="text" id="rg"></div>
+        <div><label>CPF</label><input type="text" id="cpf"></div>
+      </div>
+      <label>Data de nascimento</label>
+      <input type="date" id="data_nascimento">
+      <div class="linha">
+        <div><label>Nome do pai</label><input type="text" id="nome_pai"></div>
+        <div><label>Nome da mãe</label><input type="text" id="nome_mae"></div>
+      </div>
+      <label>Endereço</label>
+      <input type="text" id="endereco">
+      <div class="linha">
+        <div><label>Bairro</label><input type="text" id="bairro"></div>
+        <div><label>Complemento</label><input type="text" id="complemento"></div>
+      </div>
+      <div class="linha">
+        <div><label>Telefone fixo</label><input type="text" id="telefone_fixo"></div>
+        <div><label>Celular</label><input type="text" id="celular"></div>
+      </div>
+      <label>E-mail</label>
+      <input type="email" id="email">
+      <label>Escola</label>
+      <input type="text" id="escola">
+      <div class="linha">
+        <div><label>Série</label><input type="text" id="serie_escola"></div>
+        <div><label>Horário escolar</label><input type="text" id="horario_escola"></div>
+      </div>
+      <div class="checkbox-linha">
+        <input type="checkbox" id="possui_convenio" data-qual="linhaConvenioQual">
+        <label>Possui convênio de saúde</label>
+      </div>
+      <div id="linhaConvenioQual" style="display:none;">
+        <label>Qual convênio?</label>
+        <input type="text" id="convenio_qual">
+      </div>
+
+      <h2>Responsável legal *</h2>
+      <div id="listaResponsaveis"></div>
+      <button type="button" id="botaoAddResponsavel">+ Adicionar responsável</button>
+
+      <h2>Modalidades</h2>
+      <div class="checkgrupo" id="grupoModalidades"></div>
+      <div class="linha" style="margin-top:10px; align-items:flex-end;">
+        <div><label>Nova modalidade</label><input type="text" id="novaModalidadeNome" placeholder="Nome da modalidade"></div>
+        <div style="flex:0 0 150px;">
+          <label>Público</label>
+          <select id="novaModalidadePublico" style="width:100%; padding:7px 9px; border:1px solid #D8D1CB; border-radius:5px; font-size:13px;">
+            <option value="infantil">Só infantil</option>
+            <option value="adulto_e_infantil">Aberta a adultos</option>
+          </select>
+        </div>
+      </div>
+      <button type="button" id="botaoAddModalidade" style="background:#F1EFE8; color:#2A2224; margin-top:8px; font-weight:400;">+ Cadastrar modalidade</button>
+
+      <h2>Ficha de saúde</h2>
+
+      <div class="checkbox-linha">
+        <input type="checkbox" id="possui_deficiencia" data-qual="linhaDeficienciaQual">
+        <label>Possui alguma deficiência</label>
+      </div>
+      <div id="linhaDeficienciaQual" style="display:none;">
+        <label>Qual?</label>
+        <input type="text" id="deficiencia_qual">
+      </div>
+
+      <label>Problemas de saúde:</label>
+      <div class="checkgrupo" id="grupoProblemasSaude"></div>
+      <label>Outros problemas de saúde (se houver)</label>
+      <input type="text" id="outros_problemas_saude">
+
+      <label>Já teve doenças contagiosas</label>
+      <div class="checkgrupo" id="grupoDoencasContagiosas"></div>
+      <label>Outras doenças contagiosas (se houver)</label>
+      <input type="text" id="outras_doencas_contagiosas">
+
+      <div class="checkbox-linha">
+        <input type="checkbox" id="fumante">
+        <label>Fumante</label>
+      </div>
+
+      <div class="checkbox-linha">
+        <input type="checkbox" id="usa_remedio_continuo" data-qual="linhaRemedioQual">
+        <label>Usa remédio de uso contínuo</label>
+      </div>
+      <div id="linhaRemedioQual" style="display:none;">
+        <label>Qual?</label>
+        <input type="text" id="remedio_continuo_qual">
+      </div>
+
+      <div class="checkbox-linha">
+        <input type="checkbox" id="ja_fez_cirurgia" data-qual="linhaCirurgiaQual">
+        <label>Já fez alguma cirurgia</label>
+      </div>
+      <div id="linhaCirurgiaQual" style="display:none;">
+        <label>Qual?</label>
+        <input type="text" id="cirurgia_qual">
+      </div>
+
+      <div class="checkbox-linha">
+        <input type="checkbox" id="possui_dores_lesoes" data-qual="linhaDoresQual">
+        <label>Possui dores ou lesões</label>
+      </div>
+      <div id="linhaDoresQual" style="display:none;">
+        <label>Qual?</label>
+        <input type="text" id="dores_lesoes_qual">
+      </div>
+
+      <div class="checkbox-linha">
+        <input type="checkbox" id="alergico" data-qual="linhaAlergiaQual">
+        <label>É alérgico</label>
+      </div>
+      <div id="linhaAlergiaQual" style="display:none;">
+        <label>A quê?</label>
+        <input type="text" id="alergico_a_que">
+      </div>
+
+      <div class="checkbox-linha">
+        <input type="checkbox" id="usa_medicamento_controlado" data-qual="linhaMedControladoQual">
+        <label>Faz uso de medicamento controlado</label>
+      </div>
+      <div id="linhaMedControladoQual" style="display:none;">
+        <label>Qual?</label>
+        <input type="text" id="medicamento_controlado_qual">
+      </div>
+
+      <div class="checkbox-linha">
+        <input type="checkbox" id="alergico_a_medicamento" data-qual="linhaAlergiaMedQual">
+        <label>É alérgico a algum medicamento</label>
+      </div>
+      <div id="linhaAlergiaMedQual" style="display:none;">
+        <label>Qual?</label>
+        <input type="text" id="alergico_medicamento_qual">
+      </div>
+
+      <div class="checkbox-linha">
+        <input type="checkbox" id="solicitar_atestado_saude" data-qual="linhaAtestadoQual">
+        <label>Solicitar atestado de saúde</label>
+      </div>
+      <div id="linhaAtestadoQual" style="display:none;">
+        <label>Motivo</label>
+        <input type="text" id="atestado_motivo">
+      </div>
+
+      <label>Observações *</label>
+      <textarea id="observacoes"></textarea>
+
+      <div class="botoes">
+        <button id="botaoSalvar">Salvar aluno</button>
+        <button id="botaoNovo" type="button">Novo</button>
+      </div>
+    </div>
+
+    <div class="cartao" id="painelLista">
+      <div class="linha">
+        <input type="text" id="busca" placeholder="Buscar por nome ou CPF">
+        <select id="filtroStatus" style="flex: 0 0 170px;">
+          <option value="">Todos os status</option>
+          <option value="ativo">Ativo</option>
+          <option value="lista_espera">Lista de espera</option>
+          <option value="inativo">Inativo</option>
+        </select>
+        <select id="filtroModalidade" style="flex: 0 0 170px;">
+          <option value="">Todas as modalidades</option>
+        </select>
+      </div>
+      <div class="linha" style="align-items:center; margin-bottom:12px;">
+        <label class="checkitem" style="margin:0;">
+          <input type="checkbox" id="filtroPendentesRematricula"> Mostrar só pendentes de rematrícula
+        </label>
+        <button type="button" id="botaoExportar" style="background:#DB5A61; color:#fff; font-weight:500; flex:0 0 auto; margin-left:auto;">Exportar (Excel)</button>
+      </div>
+      <table>
+        <thead><tr><th>Nome</th><th>Escola</th><th>Status</th><th></th><th></th></tr></thead>
+        <tbody id="corpoTabela"></tbody>
+      </table>
+    </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/erros.js"></script>
+  <script src="/layout.js"></script>
+  <script>
+    const camposTexto = [
+      'nome', 'rg', 'cpf', 'data_nascimento', 'nome_pai', 'nome_mae',
+      'endereco', 'bairro', 'complemento', 'telefone_fixo', 'celular', 'email',
+      'escola', 'serie_escola', 'horario_escola', 'convenio_qual',
+      'deficiencia_qual', 'outros_problemas_saude', 'outras_doencas_contagiosas',
+      'remedio_continuo_qual', 'cirurgia_qual', 'dores_lesoes_qual',
+      'alergico_a_que', 'medicamento_controlado_qual', 'alergico_medicamento_qual',
+      'atestado_motivo', 'observacoes'
+    ];
+
+    const camposBooleanos = [
+      'possui_convenio', 'possui_deficiencia', 'fumante', 'usa_remedio_continuo',
+      'ja_fez_cirurgia', 'possui_dores_lesoes', 'alergico',
+      'usa_medicamento_controlado', 'alergico_a_medicamento', 'solicitar_atestado_saude'
+    ];
+
+    const camposResponsavel = ['nome', 'cpf', 'rg', 'telefone', 'email', 'parentesco'];
+
+    const rotulosStatus = { ativo: 'Ativo', inativo: 'Inativo', lista_espera: 'Lista de espera' };
+
+    // Ação rápida sugerida na listagem, de acordo com o status atual do aluno.
+    const acoesStatus = {
+      ativo: { proximoStatus: 'inativo', rotulo: 'Marcar inativo' },
+      inativo: { proximoStatus: 'ativo', rotulo: 'Reativar' },
+      lista_espera: { proximoStatus: 'ativo', rotulo: 'Promover' }
+    };
+
+    async function alterarStatusAluno(id, status, dataEntradaListaEspera) {
+      await chamarApi(`/api/alunos/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, data_entrada_lista_espera: dataEntradaListaEspera })
+      });
+    }
+
+    // ---------- Arquivos: foto, documentos, termo de imagem ----------
+
+    function idAlunoAtual() {
+      return document.getElementById('alunoId').value;
+    }
+
+    async function carregarFoto(alunoId, fotoPathAtual) {
+      const preview = document.getElementById('previewFoto');
+      preview.innerHTML = fotoPathAtual
+        ? `<img src="/uploads/${fotoPathAtual}" style="max-width:120px; border-radius:6px; display:block;">`
+        : 'Nenhuma foto ainda.';
+    }
+
+    async function carregarDocumentos(alunoId) {
+      const container = document.getElementById('listaDocumentos');
+      try {
+        const documentos = await chamarApi(`/api/alunos/${alunoId}/documentos`);
+        container.innerHTML = documentos.length === 0
+          ? 'Nenhum documento anexado ainda.'
+          : documentos.map((doc) => `
+              <div class="itemDocumento">
+                <span><strong>${doc.tipo}</strong> — <a href="/uploads/${doc.arquivo_path}" target="_blank" rel="noopener">ver arquivo</a></span>
+                <button type="button" class="botaoRemover" data-remover-documento="${doc.id}">Remover</button>
+              </div>
+            `).join('');
+      } catch (erro) {
+        mostrarErro(`Não foi possível carregar os documentos: ${erro.message}`);
+      }
+    }
+
+    async function carregarTermoImagem(alunoId) {
+      const status = document.getElementById('statusTermoImagem');
+      try {
+        const termo = await chamarApi(`/api/alunos/${alunoId}/termo-imagem`);
+        if (termo.aceite_digital) {
+          status.textContent = `Aceite digital registrado em ${new Date(termo.data_aceite).toLocaleString('pt-BR')}.`;
+        } else if (termo.arquivo_path) {
+          status.innerHTML = `Arquivo assinado enviado — <a href="/uploads/${termo.arquivo_path}" target="_blank" rel="noopener">ver arquivo</a>.`;
+        } else {
+          status.textContent = 'Nenhum registro ainda.';
+        }
+      } catch (erro) {
+        mostrarErro(`Não foi possível carregar o termo de imagem: ${erro.message}`);
+      }
+    }
+
+    function carregarArquivosDoAluno(aluno) {
+      carregarFoto(aluno.id, aluno.foto_path);
+      carregarDocumentos(aluno.id);
+      carregarTermoImagem(aluno.id);
+    }
+
+    // ---------- Rematrícula anual ----------
+
+    async function carregarSituacaoMatricula(alunoId) {
+      const container = document.getElementById('blocoRematricula');
+      try {
+        const situacao = await chamarApi(`/api/alunos/${alunoId}/situacao-matricula`);
+        if (situacao.matriculadoNoAnoAtual) {
+          container.innerHTML = '';
+          return;
+        }
+
+        const textoSituacao = situacao.anoAnterior
+          ? `Última matrícula: ${situacao.anoAnterior}.`
+          : 'Ainda não teve matrícula em nenhuma modalidade.';
+        const botaoSugestao = situacao.modalidadesSugeridas && situacao.modalidadesSugeridas.length > 0
+          ? `<button type="button" id="botaoUsarModalidadesAnteriores" style="background:#fff; color:#854F0B; border:1px solid #E8C889; margin-top:8px; font-weight:500;">Usar as modalidades de ${situacao.anoAnterior}</button>`
+          : '';
+
+        container.innerHTML = `
+          <div style="background:#FAEEDA; border:1px solid #F0D9AE; border-radius:6px; padding:10px 12px; margin-bottom:16px; font-size:12px; color:#6B4A0C;">
+            <strong>Não matriculado no ano letivo de ${situacao.anoAtual}.</strong> ${textoSituacao}
+            ${botaoSugestao}
+          </div>
+        `;
+
+        const botao = document.getElementById('botaoUsarModalidadesAnteriores');
+        if (botao) {
+          botao.addEventListener('click', () => {
+            const idsSugeridos = situacao.modalidadesSugeridas.map(String);
+            document.querySelectorAll('.chk-modalidade').forEach((c) => { c.checked = idsSugeridos.includes(c.value); });
+          });
+        }
+      } catch (erro) {
+        mostrarErro(`Não foi possível carregar a situação de matrícula: ${erro.message}`);
+      }
+    }
+
+    document.getElementById('botaoEnviarFoto').addEventListener('click', async () => {
+      const alunoId = idAlunoAtual();
+      const arquivo = document.getElementById('inputFoto').files[0];
+      if (!alunoId || !arquivo) {
+        mostrarErro('Escolha um arquivo de foto antes de enviar.');
+        return;
+      }
+      const formData = new FormData();
+      formData.append('foto', arquivo);
+      try {
+        const resultado = await chamarApi(`/api/alunos/${alunoId}/foto`, { method: 'POST', body: formData });
+        document.getElementById('inputFoto').value = '';
+        carregarFoto(alunoId, resultado.foto_path);
+      } catch (erro) {
+        mostrarErro(erro.message);
+      }
+    });
+
+    document.getElementById('botaoEnviarDocumento').addEventListener('click', async () => {
+      const alunoId = idAlunoAtual();
+      const tipo = document.getElementById('tipoDocumento').value.trim();
+      const arquivo = document.getElementById('inputDocumento').files[0];
+      if (!alunoId) return;
+      if (!tipo) {
+        mostrarErro('Informe o tipo do documento.');
+        return;
+      }
+      if (!arquivo) {
+        mostrarErro('Escolha um arquivo antes de anexar.');
+        return;
+      }
+      const formData = new FormData();
+      formData.append('tipo', tipo);
+      formData.append('arquivo', arquivo);
+      try {
+        await chamarApi(`/api/alunos/${alunoId}/documentos`, { method: 'POST', body: formData });
+        document.getElementById('tipoDocumento').value = '';
+        document.getElementById('inputDocumento').value = '';
+        carregarDocumentos(alunoId);
+      } catch (erro) {
+        mostrarErro(erro.message);
+      }
+    });
+
+    document.getElementById('listaDocumentos').addEventListener('click', async (evento) => {
+      const botao = evento.target.closest('[data-remover-documento]');
+      if (!botao) return;
+      const alunoId = idAlunoAtual();
+      try {
+        await chamarApi(`/api/alunos/${alunoId}/documentos/${botao.dataset.removerDocumento}`, { method: 'DELETE' });
+        carregarDocumentos(alunoId);
+      } catch (erro) {
+        mostrarErro(erro.message);
+      }
+    });
+
+    document.getElementById('botaoAceiteDigital').addEventListener('click', async () => {
+      const alunoId = idAlunoAtual();
+      if (!alunoId) return;
+      try {
+        await chamarApi(`/api/alunos/${alunoId}/termo-imagem/aceite`, { method: 'POST' });
+        carregarTermoImagem(alunoId);
+      } catch (erro) {
+        mostrarErro(erro.message);
+      }
+    });
+
+    document.getElementById('botaoEnviarTermoImagem').addEventListener('click', async () => {
+      const alunoId = idAlunoAtual();
+      const arquivo = document.getElementById('inputTermoImagem').files[0];
+      if (!alunoId) return;
+      if (!arquivo) {
+        mostrarErro('Escolha o arquivo assinado antes de enviar.');
+        return;
+      }
+      const formData = new FormData();
+      formData.append('arquivo', arquivo);
+      try {
+        await chamarApi(`/api/alunos/${alunoId}/termo-imagem/arquivo`, { method: 'POST', body: formData });
+        document.getElementById('inputTermoImagem').value = '';
+        carregarTermoImagem(alunoId);
+      } catch (erro) {
+        mostrarErro(erro.message);
+      }
+    });
+
+    // ---------- Responsáveis (lista dinâmica) ----------
+
+    function criarLinhaResponsavel(dados = {}) {
+      const div = document.createElement('div');
+      div.className = 'cartaoResponsavel';
+      const ehPrincipal = document.querySelectorAll('#listaResponsaveis .cartaoResponsavel').length === 0;
+      div.innerHTML = `
+        <div class="cabecalhoResp">
+          <strong>${ehPrincipal ? 'Responsável principal' : 'Responsável'}</strong>
+          <button type="button" class="botaoRemover">Remover</button>
+        </div>
+        <div class="linha">
+          <div><label>Nome *</label><input type="text" class="resp-nome" value="${dados.nome || ''}"></div>
+          <div><label>Parentesco</label><input type="text" class="resp-parentesco" value="${dados.parentesco || ''}"></div>
+        </div>
+        <div class="linha">
+          <div><label>CPF</label><input type="text" class="resp-cpf" value="${dados.cpf || ''}"></div>
+          <div><label>RG</label><input type="text" class="resp-rg" value="${dados.rg || ''}"></div>
+        </div>
+        <div class="linha">
+          <div><label>Telefone</label><input type="text" class="resp-telefone" value="${dados.telefone || ''}"></div>
+          <div><label>E-mail</label><input type="text" class="resp-email" value="${dados.email || ''}"></div>
+        </div>
+      `;
+      div.querySelector('.botaoRemover').addEventListener('click', () => {
+        div.remove();
+        atualizarRotulosResponsaveis();
+      });
+      document.getElementById('listaResponsaveis').appendChild(div);
+    }
+
+    function atualizarRotulosResponsaveis() {
+      document.querySelectorAll('#listaResponsaveis .cartaoResponsavel').forEach((cartao, indice) => {
+        cartao.querySelector('.cabecalhoResp strong').textContent = indice === 0 ? 'Responsável principal' : 'Responsável';
+      });
+    }
+
+    document.getElementById('botaoAddResponsavel').addEventListener('click', () => criarLinhaResponsavel());
+
+    function coletarResponsaveis() {
+      return Array.from(document.querySelectorAll('#listaResponsaveis .cartaoResponsavel')).map((cartao) => {
+        const resp = {};
+        camposResponsavel.forEach((campo) => {
+          resp[campo] = cartao.querySelector(`.resp-${campo}`).value;
+        });
+        return resp;
+      });
+    }
+
+    // Liga cada checkbox ao seu campo "qual" (mostra/esconde)
+    document.querySelectorAll('input[type=checkbox][data-qual]').forEach((caixa) => {
+      caixa.addEventListener('change', (e) => {
+        document.getElementById(e.target.dataset.qual).style.display = e.target.checked ? 'block' : 'none';
+      });
+    });
+
+    async function montarGrupoCheckbox(url, containerId, campoNome) {
+      try {
+        const itens = await chamarApi(url);
+        const container = document.getElementById(containerId);
+        container.innerHTML = itens.map((item) => `
+          <label class="checkitem">
+            <input type="checkbox" class="${campoNome}" value="${item.id}"> ${item.nome}
+          </label>
+        `).join('');
+      } catch (erro) {
+        mostrarErro(`Não foi possível carregar as opções da ficha de saúde: ${erro.message}`);
+      }
+    }
+
+    montarGrupoCheckbox('/api/problemas-saude', 'grupoProblemasSaude', 'chk-problema');
+    montarGrupoCheckbox('/api/doencas-contagiosas', 'grupoDoencasContagiosas', 'chk-doenca');
+    montarGrupoCheckbox('/api/modalidades', 'grupoModalidades', 'chk-modalidade');
+
+    async function montarFiltroModalidade() {
+      try {
+        const modalidades = await chamarApi('/api/modalidades');
+        const select = document.getElementById('filtroModalidade');
+        const valorAtual = select.value;
+        select.innerHTML = '<option value="">Todas as modalidades</option>' +
+          modalidades.map((m) => `<option value="${m.id}">${m.nome}</option>`).join('');
+        select.value = valorAtual;
+      } catch (erro) {
+        mostrarErro(`Não foi possível carregar as modalidades do filtro: ${erro.message}`);
+      }
+    }
+
+    montarFiltroModalidade();
+
+    document.getElementById('botaoAddModalidade').addEventListener('click', async () => {
+      const nome = document.getElementById('novaModalidadeNome').value;
+      const publico = document.getElementById('novaModalidadePublico').value;
+      const idsMarcados = Array.from(document.querySelectorAll('.chk-modalidade:checked')).map((c) => c.value);
+      try {
+        await chamarApi('/api/modalidades', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome, publico })
+        });
+        document.getElementById('novaModalidadeNome').value = '';
+        await montarGrupoCheckbox('/api/modalidades', 'grupoModalidades', 'chk-modalidade');
+        document.querySelectorAll('.chk-modalidade').forEach((c) => { c.checked = idsMarcados.includes(c.value); });
+        montarFiltroModalidade();
+      } catch (erro) {
+        mostrarErro(erro.message);
+      }
+    });
+
+    function limparFormulario() {
+      document.getElementById('alunoId').value = '';
+      camposTexto.forEach((campo) => { document.getElementById(campo).value = ''; });
+      camposBooleanos.forEach((campo) => {
+        const el = document.getElementById(campo);
+        el.checked = false;
+        if (el.dataset.qual) document.getElementById(el.dataset.qual).style.display = 'none';
+      });
+      document.querySelectorAll('.chk-problema, .chk-doenca, .chk-modalidade').forEach((c) => { c.checked = false; });
+      document.getElementById('listaResponsaveis').innerHTML = '';
+      criarLinhaResponsavel();
+      document.getElementById('blocoStatus').style.display = 'none';
+      document.getElementById('blocoArquivos').style.display = 'none';
+      document.getElementById('blocoRematricula').innerHTML = '';
+      document.getElementById('tituloForm').textContent = 'Novo aluno';
+    }
+
+    document.getElementById('botaoNovo').addEventListener('click', limparFormulario);
+
+    function renderizarLinhasAlunos(alunos) {
+      const corpo = document.getElementById('corpoTabela');
+      corpo.innerHTML = '';
+      alunos.forEach((aluno) => {
+        const acao = acoesStatus[aluno.status];
+        const linha = document.createElement('tr');
+        linha.innerHTML = `
+          <td>${aluno.nome}</td>
+          <td>${aluno.escola || '-'}</td>
+          <td><span class="pill pill-${aluno.status}">${rotulosStatus[aluno.status] || aluno.status}</span></td>
+          <td>${acao ? `<button type="button" class="botaoStatusRapido" data-id="${aluno.id}" data-status="${acao.proximoStatus}">${acao.rotulo}</button>` : ''}</td>
+          <td><span class="ver" data-id="${aluno.id}">Ver / editar</span></td>
+        `;
+        corpo.appendChild(linha);
+      });
+    }
+
+    async function carregarLista(busca) {
+      const somentePendentes = document.getElementById('filtroPendentesRematricula').checked;
+
+      if (somentePendentes) {
+        try {
+          renderizarLinhasAlunos(await chamarApi('/api/alunos/pendentes-rematricula'));
+        } catch (erro) {
+          mostrarErro(`Não foi possível carregar a lista de rematrícula pendente: ${erro.message}`);
+        }
+        return;
+      }
+
+      const status = document.getElementById('filtroStatus').value;
+      const modalidade = document.getElementById('filtroModalidade').value;
+      const parametros = new URLSearchParams();
+      if (busca) parametros.set('busca', busca);
+      if (status) parametros.set('status', status);
+      if (modalidade) parametros.set('modalidade', modalidade);
+      const url = parametros.toString() ? `/api/alunos?${parametros}` : '/api/alunos';
+      try {
+        renderizarLinhasAlunos(await chamarApi(url));
+      } catch (erro) {
+        mostrarErro(`Não foi possível carregar a lista de alunos: ${erro.message}`);
+      }
+    }
+
+    document.getElementById('filtroStatus').addEventListener('change', () => {
+      carregarLista(document.getElementById('busca').value);
+    });
+
+    document.getElementById('filtroModalidade').addEventListener('change', () => {
+      carregarLista(document.getElementById('busca').value);
+    });
+
+    document.getElementById('filtroPendentesRematricula').addEventListener('change', (e) => {
+      // Enquanto o filtro de pendentes está ativo, busca e status normais
+      // ficam desabilitados — os dois modos de listagem não se combinam.
+      // A exportação também usa esses mesmos filtros, então fica desabilitada junto.
+      document.getElementById('busca').disabled = e.target.checked;
+      document.getElementById('filtroStatus').disabled = e.target.checked;
+      document.getElementById('filtroModalidade').disabled = e.target.checked;
+      document.getElementById('botaoExportar').disabled = e.target.checked;
+      carregarLista(document.getElementById('busca').value);
+    });
+
+    // Exporta em Excel exatamente os alunos que estão filtrados na tela no
+    // momento — mesma busca/status/modalidade aplicados na listagem.
+    // Navegar para a URL (em vez de fetch) deixa o navegador cuidar do
+    // download sozinho, usando o cookie de sessão já existente.
+    document.getElementById('botaoExportar').addEventListener('click', () => {
+      const busca = document.getElementById('busca').value;
+      const status = document.getElementById('filtroStatus').value;
+      const modalidade = document.getElementById('filtroModalidade').value;
+      const parametros = new URLSearchParams();
+      if (busca) parametros.set('busca', busca);
+      if (status) parametros.set('status', status);
+      if (modalidade) parametros.set('modalidade', modalidade);
+      const url = parametros.toString() ? `/api/alunos/exportar?${parametros}` : '/api/alunos/exportar';
+      window.location.href = url;
+    });
+
+    document.getElementById('corpoTabela').addEventListener('click', async (evento) => {
+      const botaoStatus = evento.target.closest('.botaoStatusRapido');
+      if (botaoStatus) {
+        try {
+          await alterarStatusAluno(botaoStatus.dataset.id, botaoStatus.dataset.status);
+          carregarLista(document.getElementById('busca').value);
+        } catch (erro) {
+          mostrarErro(erro.message);
+        }
+        return;
+      }
+
+      const alvo = evento.target.closest('.ver');
+      if (!alvo) return;
+
+      let aluno;
+      try {
+        aluno = await chamarApi(`/api/alunos/${alvo.dataset.id}`);
+      } catch (erro) {
+        mostrarErro(`Não foi possível carregar esse aluno: ${erro.message}`);
+        return;
+      }
+
+      document.getElementById('alunoId').value = aluno.id;
+      camposTexto.forEach((campo) => { document.getElementById(campo).value = aluno[campo] || ''; });
+      camposBooleanos.forEach((campo) => {
+        const el = document.getElementById(campo);
+        el.checked = !!aluno[campo];
+        if (el.dataset.qual) {
+          document.getElementById(el.dataset.qual).style.display = aluno[campo] ? 'block' : 'none';
+        }
+      });
+
+      const problemasIds = (aluno.problemas_saude_ids || []).map(String);
+      document.querySelectorAll('.chk-problema').forEach((c) => { c.checked = problemasIds.includes(c.value); });
+      const doencasIds = (aluno.doencas_contagiosas_ids || []).map(String);
+      document.querySelectorAll('.chk-doenca').forEach((c) => { c.checked = doencasIds.includes(c.value); });
+
+      const modalidadeIds = (aluno.modalidade_ids || []).map(String);
+      document.querySelectorAll('.chk-modalidade').forEach((c) => { c.checked = modalidadeIds.includes(c.value); });
+
+      document.getElementById('listaResponsaveis').innerHTML = '';
+      if (aluno.responsaveis && aluno.responsaveis.length > 0) {
+        aluno.responsaveis.forEach((resp) => criarLinhaResponsavel(resp));
+      } else {
+        criarLinhaResponsavel();
+      }
+
+      document.getElementById('blocoStatus').style.display = 'block';
+      document.getElementById('statusAtual').value = aluno.status;
+      document.getElementById('dataEntradaListaEspera').value = aluno.data_entrada_lista_espera || '';
+      document.getElementById('linhaDataListaEspera').style.display = aluno.status === 'lista_espera' ? 'block' : 'none';
+
+      document.getElementById('blocoArquivos').style.display = 'block';
+      carregarArquivosDoAluno(aluno);
+      carregarSituacaoMatricula(aluno.id);
+
+      document.getElementById('tituloForm').textContent = `Editando: ${aluno.nome}`;
+    });
+
+    document.getElementById('statusAtual').addEventListener('change', (e) => {
+      document.getElementById('linhaDataListaEspera').style.display = e.target.value === 'lista_espera' ? 'block' : 'none';
+    });
+
+    document.getElementById('botaoAplicarStatus').addEventListener('click', async () => {
+      const id = document.getElementById('alunoId').value;
+      if (!id) return;
+      const status = document.getElementById('statusAtual').value;
+      const dataEntrada = document.getElementById('dataEntradaListaEspera').value;
+      try {
+        await alterarStatusAluno(id, status, dataEntrada);
+        carregarLista(document.getElementById('busca').value);
+      } catch (erro) {
+        mostrarErro(erro.message);
+      }
+    });
+
+    document.getElementById('busca').addEventListener('input', (e) => { carregarLista(e.target.value); });
+
+    document.getElementById('botaoSalvar').addEventListener('click', async () => {
+      const dados = {};
+      camposTexto.forEach((campo) => { dados[campo] = document.getElementById(campo).value; });
+      camposBooleanos.forEach((campo) => { dados[campo] = document.getElementById(campo).checked ? 1 : 0; });
+      dados.problemas_saude_ids = Array.from(document.querySelectorAll('.chk-problema:checked')).map((c) => c.value);
+      dados.doencas_contagiosas_ids = Array.from(document.querySelectorAll('.chk-doenca:checked')).map((c) => c.value);
+      dados.modalidade_ids = Array.from(document.querySelectorAll('.chk-modalidade:checked')).map((c) => c.value);
+      dados.responsaveis = coletarResponsaveis().filter((r) => r.nome && r.nome.trim());
+
+      if (dados.responsaveis.length === 0) {
+        mostrarErro('É obrigatório informar ao menos um responsável legal (com nome preenchido).');
+        return;
+      }
+
+      const id = document.getElementById('alunoId').value;
+      const url = id ? `/api/alunos/${id}` : '/api/alunos';
+      const metodo = id ? 'PUT' : 'POST';
+
+      try {
+        await chamarApi(url, {
+          method: metodo,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dados)
+        });
+        limparFormulario();
+        carregarLista();
+      } catch (erro) {
+        mostrarErro(erro.message);
+      }
+    });
+
+    criarLinhaResponsavel();
+    carregarLista();
+    iniciarLayout();
+  </script>
+</body>
+</html>

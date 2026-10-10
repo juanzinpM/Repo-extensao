@@ -1,0 +1,125 @@
+/* public/tema.css
+   Identidade visual do Instituto Missão Art — paleta de marca e o layout
+   de sidebar + topbar usado em toda página protegida. Incluído via
+   <link rel="stylesheet" href="/tema.css"> nas páginas que usam esse
+   layout (hoje: alunos.html; login.html usa só a paleta de cores).
+*/
+
+:root {
+  --coral: #DB5A61;
+  --coral-claro: #FDF1F1;
+  --carvao: #2A2224;
+  --cinza-texto: #6B615D;
+  --fundo: #FAF7F4;
+  --borda: #E7E1DC;
+}
+
+/* ---------- Estrutura: sidebar fixa + topbar + área de conteúdo ---------- */
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+  background: var(--fundo);
+}
+
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: #fff;
+  border-right: 0.5px solid var(--borda);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar .areaLogo {
+  padding: 22px 20px;
+  border-bottom: 0.5px solid var(--borda);
+}
+
+.sidebar .areaLogo img {
+  width: 100%;
+  max-width: 130px;
+  display: block;
+}
+
+.sidebar nav {
+  padding: 10px 0;
+  flex: 1;
+}
+
+.sidebar nav a {
+  display: block;
+  padding: 10px 20px;
+  font-size: 14px;
+  color: var(--carvao);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+}
+
+.sidebar nav a:hover {
+  background: var(--fundo);
+}
+
+.sidebar nav a.ativo {
+  border-left-color: var(--coral);
+  background: var(--coral-claro);
+  color: var(--coral);
+  font-weight: 600;
+}
+
+.areaPrincipal {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  height: 58px;
+  flex-shrink: 0;
+  background: #fff;
+  border-bottom: 0.5px solid var(--borda);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 0 28px;
+}
+
+.topbar .avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--coral);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.topbar .nomeUsuario {
+  font-size: 13px;
+  color: var(--carvao);
+}
+
+.topbar .botaoSair {
+  background: none;
+  border: none;
+  color: #9C918C;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+#avisoAmbiente {
+  background: #C98A3E;
+  color: #fff;
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  display: none;
+}
