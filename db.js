@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS alunos (
   email TEXT,
   escola TEXT,
   serie_escola TEXT,
-  horario_escola TEXT,
+  periodo_escola TEXT,
   possui_convenio INTEGER DEFAULT 0,
   convenio_qual TEXT,
   possui_deficiencia INTEGER DEFAULT 0,
@@ -212,6 +212,14 @@ modalidades.forEach(([nome, publico]) => inserirModalidade.run(nome, publico));
 // Garante que o ano letivo atual exista
 const anoAtual = new Date().getFullYear();
 db.prepare('INSERT OR IGNORE INTO anos_letivos (ano, ativo) VALUES (?, 1)').run(anoAtual);
+
+// Migração: bancos criados antes da troca de "horário escolar" (texto livre)
+// por "período escolar" (manhã/tarde/noite/integral) só têm a coluna antiga.
+// RENAME COLUMN preserva os dados já gravados.
+const colunasAlunos = db.prepare('PRAGMA table_info(alunos)').all().map((c) => c.name);
+if (colunasAlunos.includes('horario_escola') && !colunasAlunos.includes('periodo_escola')) {
+  db.exec('ALTER TABLE alunos RENAME COLUMN horario_escola TO periodo_escola');
+}
 
 console.log(`Banco de dados pronto (${ARQUIVO_BANCO}). Ambiente: ${AMBIENTE.toUpperCase()}. Ano letivo ${anoAtual} garantido.`);
 

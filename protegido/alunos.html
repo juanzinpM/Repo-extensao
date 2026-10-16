@@ -111,14 +111,13 @@
 
       <div id="blocoRematricula"></div>
 
-      <div id="blocoArquivos" style="display:none;">
+      <div id="blocoArquivos">
         <h2>Foto</h2>
         <div id="previewFoto" style="font-size:12px; color:#6B615D; margin-bottom:8px;">Nenhuma foto ainda.</div>
         <input type="file" id="inputFoto" accept="image/jpeg,image/png,image/webp">
-        <button type="button" id="botaoEnviarFoto" style="background:#F1EFE8; color:#2A2224; margin-top:8px; font-weight:400;">Enviar foto</button>
 
         <h2>Documentos</h2>
-        <div id="listaDocumentos" style="font-size:12px;"></div>
+        <div id="listaDocumentos" style="font-size:12px;">Nenhum documento anexado ainda.</div>
         <div class="linha" style="margin-top:10px; align-items:flex-end;">
           <div><label>Tipo de documento</label><input type="text" id="tipoDocumento" placeholder="Ex: RG, comprovante de endereço"></div>
           <div><label>Arquivo</label><input type="file" id="inputDocumento" accept="image/jpeg,image/png,image/webp,application/pdf"></div>
@@ -137,8 +136,8 @@
       <label>Nome completo *</label>
       <input type="text" id="nome">
       <div class="linha">
-        <div><label>RG</label><input type="text" id="rg"></div>
-        <div><label>CPF</label><input type="text" id="cpf"></div>
+        <div><label>RG</label><input type="text" id="rg" data-mascara="rg" placeholder="00.000.000-0" maxlength="12" autocomplete="off"></div>
+        <div><label>CPF</label><input type="text" id="cpf" data-mascara="cpf" placeholder="000.000.000-00" maxlength="14" inputmode="numeric" autocomplete="off"></div>
       </div>
       <label>Data de nascimento</label>
       <input type="date" id="data_nascimento">
@@ -153,8 +152,8 @@
         <div><label>Complemento</label><input type="text" id="complemento"></div>
       </div>
       <div class="linha">
-        <div><label>Telefone fixo</label><input type="text" id="telefone_fixo"></div>
-        <div><label>Celular</label><input type="text" id="celular"></div>
+        <div><label>Telefone fixo</label><input type="text" id="telefone_fixo" data-mascara="fixo" placeholder="(00) 0000-0000" maxlength="14" inputmode="numeric" autocomplete="off"></div>
+        <div><label>Celular</label><input type="text" id="celular" data-mascara="celular" placeholder="(00) 00000-0000" maxlength="15" inputmode="numeric" autocomplete="off"></div>
       </div>
       <label>E-mail</label>
       <input type="email" id="email">
@@ -162,7 +161,15 @@
       <input type="text" id="escola">
       <div class="linha">
         <div><label>Série</label><input type="text" id="serie_escola"></div>
-        <div><label>Horário escolar</label><input type="text" id="horario_escola"></div>
+        <div><label>Período escolar</label>
+          <select id="periodo_escola">
+            <option value="">Selecione</option>
+            <option value="manhã">Manhã</option>
+            <option value="tarde">Tarde</option>
+            <option value="noite">Noite</option>
+            <option value="integral">Integral</option>
+          </select>
+        </div>
       </div>
       <div class="checkbox-linha">
         <input type="checkbox" id="possui_convenio" data-qual="linhaConvenioQual">
@@ -173,7 +180,8 @@
         <input type="text" id="convenio_qual">
       </div>
 
-      <h2>Responsável legal *</h2>
+      <h2>Responsável legal <span id="marcaResponsavelObrigatorio">*</span></h2>
+      <div id="avisoResponsavelOpcional" style="display:none; font-size:12px; color:#6B615D; margin-bottom:6px;">Opcional: o aluno é maior de 18 anos.</div>
       <div id="listaResponsaveis"></div>
       <button type="button" id="botaoAddResponsavel">+ Adicionar responsável</button>
 
@@ -324,7 +332,7 @@
     const camposTexto = [
       'nome', 'rg', 'cpf', 'data_nascimento', 'nome_pai', 'nome_mae',
       'endereco', 'bairro', 'complemento', 'telefone_fixo', 'celular', 'email',
-      'escola', 'serie_escola', 'horario_escola', 'convenio_qual',
+      'escola', 'serie_escola', 'periodo_escola', 'convenio_qual',
       'deficiencia_qual', 'outros_problemas_saude', 'outras_doencas_contagiosas',
       'remedio_continuo_qual', 'cirurgia_qual', 'dores_lesoes_qual',
       'alergico_a_que', 'medicamento_controlado_qual', 'alergico_medicamento_qual',
@@ -338,6 +346,82 @@
     ];
 
     const camposResponsavel = ['nome', 'cpf', 'rg', 'telefone', 'email', 'parentesco'];
+
+
+    // ---------- Máscaras de formatação (padrão BR) ----------
+    // Só formata o que a pessoa digita — não valida se o CPF/RG existe.
+    function aplicarPadrao(digitos, padrao) {
+      let resultado = '';
+      let indice = 0;
+      for (const simbolo of padrao) {
+        if (indice >= digitos.length) break;
+        if (simbolo === '#') {
+          resultado += digitos[indice++];
+        } else {
+          resultado += simbolo;
+        }
+      }
+      return resultado;
+    }
+
+    const mascaras = {
+      cpf: (v) => aplicarPadrao(v.replace(/\D/g, '').slice(0, 11), '###.###.###-##'),
+      // RG varia por estado; usa o formato mais comum e aceita "X" no dígito final.
+      rg: (v) => aplicarPadrao(v.replace(/[^0-9xX]/g, '').toUpperCase().slice(0, 9), '##.###.###-#'),
+      fixo: (v) => aplicarPadrao(v.replace(/\D/g, '').slice(0, 10), '(##) ####-####'),
+      celular: (v) => aplicarPadrao(v.replace(/\D/g, '').slice(0, 11), '(##) #####-####'),
+      // Campo único do responsável: 10 dígitos = fixo, 11 dígitos = celular.
+      telefone: (v) => {
+        const digitos = v.replace(/\D/g, '').slice(0, 11);
+        return aplicarPadrao(digitos, digitos.length > 10 ? '(##) #####-####' : '(##) ####-####');
+      }
+    };
+
+    function reaplicarMascaras(raiz) {
+      raiz.querySelectorAll('[data-mascara]').forEach((campo) => {
+        campo.value = mascaras[campo.dataset.mascara](campo.value);
+      });
+    }
+
+    // Delegado no documento: vale também para os responsáveis criados dinamicamente.
+    document.addEventListener('input', (e) => {
+      const campo = e.target;
+      if (!campo.dataset || !campo.dataset.mascara) return;
+      campo.value = mascaras[campo.dataset.mascara](campo.value);
+    });
+
+
+    // ---------- Modal de sucesso ----------
+    function mostrarSucesso(mensagem) {
+      const fundo = document.createElement('div');
+      fundo.style.cssText = `
+        position: fixed; inset: 0; background: rgba(42,37,35,0.45); display: flex;
+        align-items: center; justify-content: center; z-index: 1000;
+        font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+      `;
+      fundo.innerHTML = `
+        <div role="dialog" aria-modal="true" style="background:#fff; border-radius:10px; padding:22px; width:320px; max-width:90vw; box-shadow:0 4px 24px rgba(0,0,0,0.18);">
+          <strong style="font-size:14px; color:#2A2224;">Tudo certo</strong>
+          <p style="font-size:13px; color:#2A2523; margin:10px 0 16px; line-height:1.45;"></p>
+          <button type="button" style="background:#DB5A61; color:#fff; border:none; border-radius:6px; padding:8px 16px; font-size:13px; cursor:pointer;">OK</button>
+        </div>
+      `;
+      fundo.querySelector('p').textContent = mensagem;
+
+      function fechar() {
+        document.removeEventListener('keydown', aoTeclar);
+        fundo.remove();
+      }
+      function aoTeclar(e) {
+        if (e.key === 'Escape' || e.key === 'Enter') fechar();
+      }
+      fundo.addEventListener('click', (e) => {
+        if (e.target === fundo || e.target.tagName === 'BUTTON') fechar();
+      });
+      document.addEventListener('keydown', aoTeclar);
+      document.body.appendChild(fundo);
+      fundo.querySelector('button').focus();
+    }
 
     const rotulosStatus = { ativo: 'Ativo', inativo: 'Inativo', lista_espera: 'Lista de espera' };
 
@@ -362,11 +446,114 @@
       return document.getElementById('alunoId').value;
     }
 
-    async function carregarFoto(alunoId, fotoPathAtual) {
+    // Arquivos escolhidos antes de o aluno existir (cadastro novo). Ficam na
+    // memória do navegador e são enviados logo depois que o aluno é salvo,
+    // porque a API de upload precisa do id do aluno.
+    const pendentes = { foto: null, documentos: [], termo: null };
+    let urlFotoPendente = null;
+
+    function limparPendentes() {
+      pendentes.foto = null;
+      pendentes.documentos = [];
+      pendentes.termo = null;
+      if (urlFotoPendente) { URL.revokeObjectURL(urlFotoPendente); urlFotoPendente = null; }
+    }
+
+    const TIPOS_IMAGEM = ['image/jpeg', 'image/png', 'image/webp'];
+    const TAMANHO_MAXIMO_MB = 5;
+
+    // Mesma checagem do servidor, feita antes para avisar na hora (e não só ao salvar).
+    function arquivoValido(arquivo, aceitaPdf) {
+      const tipos = aceitaPdf ? [...TIPOS_IMAGEM, 'application/pdf'] : TIPOS_IMAGEM;
+      if (!tipos.includes(arquivo.type)) {
+        mostrarErro(aceitaPdf
+          ? 'Tipo de arquivo não permitido. Use JPEG, PNG, WEBP ou PDF.'
+          : 'Tipo de arquivo não permitido. Use JPEG, PNG ou WEBP.');
+        return false;
+      }
+      if (arquivo.size > TAMANHO_MAXIMO_MB * 1024 * 1024) {
+        mostrarErro(`Arquivo muito grande. Tamanho máximo: ${TAMANHO_MAXIMO_MB}MB.`);
+        return false;
+      }
+      return true;
+    }
+
+    // src = endereço da imagem (do servidor ou local); null = sem foto.
+    function renderizarFoto(src) {
       const preview = document.getElementById('previewFoto');
-      preview.innerHTML = fotoPathAtual
-        ? `<img src="/uploads/${fotoPathAtual}" style="max-width:120px; border-radius:6px; display:block;">`
-        : 'Nenhuma foto ainda.';
+      if (!src) {
+        preview.textContent = 'Nenhuma foto ainda.';
+        return;
+      }
+      preview.innerHTML = `
+        <img id="imagemFoto" src="${src}" title="Clique para ampliar"
+             style="max-width:120px; border-radius:6px; display:block; cursor:zoom-in;">
+        <button type="button" id="botaoRemoverFoto" class="botaoRemover" style="margin-top:8px;">Remover foto</button>
+      `;
+    }
+
+    async function carregarFoto(alunoId, fotoPathAtual) {
+      renderizarFoto(fotoPathAtual ? `/uploads/${fotoPathAtual}` : null);
+    }
+
+    function abrirImagemAmpliada(src) {
+      const fundo = document.createElement('div');
+      fundo.style.cssText = `
+        position: fixed; inset: 0; background: rgba(42,37,35,0.8); display: flex;
+        align-items: center; justify-content: center; z-index: 1000; cursor: zoom-out;
+      `;
+      const imagem = document.createElement('img');
+      imagem.src = src;
+      imagem.style.cssText = 'max-width: 90vw; max-height: 90vh; border-radius: 8px; box-shadow: 0 4px 24px rgba(0,0,0,0.4);';
+      fundo.appendChild(imagem);
+
+      function fechar() {
+        document.removeEventListener('keydown', aoTeclar);
+        fundo.remove();
+      }
+      function aoTeclar(e) { if (e.key === 'Escape') fechar(); }
+      fundo.addEventListener('click', fechar);
+      document.addEventListener('keydown', aoTeclar);
+      document.body.appendChild(fundo);
+    }
+
+    document.getElementById('previewFoto').addEventListener('click', async (evento) => {
+      if (evento.target.id === 'imagemFoto') {
+        abrirImagemAmpliada(evento.target.src);
+        return;
+      }
+      if (evento.target.id === 'botaoRemoverFoto') {
+        const alunoId = idAlunoAtual();
+        try {
+          if (alunoId) {
+            await chamarApi(`/api/alunos/${alunoId}/foto`, { method: 'DELETE' });
+            carregarLista(document.getElementById('busca').value);
+          } else {
+            pendentes.foto = null;
+            if (urlFotoPendente) { URL.revokeObjectURL(urlFotoPendente); urlFotoPendente = null; }
+          }
+          renderizarFoto(null);
+        } catch (erro) {
+          mostrarErro(erro.message);
+        }
+      }
+    });
+
+    function renderizarDocumentosPendentes() {
+      const container = document.getElementById('listaDocumentos');
+      container.innerHTML = pendentes.documentos.length === 0
+        ? 'Nenhum documento anexado ainda.'
+        : pendentes.documentos.map((doc, indice) => `
+            <div class="itemDocumento">
+              <span><strong></strong> — <span class="nomeArquivoPendente"></span> (será enviado ao salvar o aluno)</span>
+              <button type="button" class="botaoRemover" data-remover-documento-pendente="${indice}">Remover</button>
+            </div>
+          `).join('');
+      // textContent evita que nome de arquivo/tipo digitado vire HTML.
+      container.querySelectorAll('.itemDocumento').forEach((item, indice) => {
+        item.querySelector('strong').textContent = pendentes.documentos[indice].tipo;
+        item.querySelector('.nomeArquivoPendente').textContent = pendentes.documentos[indice].arquivo.name;
+      });
     }
 
     async function carregarDocumentos(alunoId) {
@@ -386,6 +573,25 @@
       }
     }
 
+    function renderizarTermoPendente() {
+      const status = document.getElementById('statusTermoImagem');
+      if (!pendentes.termo) {
+        status.textContent = 'Nenhum registro ainda.';
+        return;
+      }
+      status.innerHTML = `<span id="textoTermoPendente"></span> <button type="button" class="botaoRemover" id="botaoDesfazerTermoPendente">Desfazer</button>`;
+      document.getElementById('textoTermoPendente').textContent = pendentes.termo.aceite
+        ? 'Aceite digital será registrado ao salvar o aluno.'
+        : `Arquivo assinado (${pendentes.termo.arquivo.name}) será enviado ao salvar o aluno.`;
+    }
+
+    document.getElementById('statusTermoImagem').addEventListener('click', (evento) => {
+      if (evento.target.id === 'botaoDesfazerTermoPendente') {
+        pendentes.termo = null;
+        renderizarTermoPendente();
+      }
+    });
+
     async function carregarTermoImagem(alunoId) {
       const status = document.getElementById('statusTermoImagem');
       try {
@@ -403,6 +609,7 @@
     }
 
     function carregarArquivosDoAluno(aluno) {
+      limparPendentes();
       carregarFoto(aluno.id, aluno.foto_path);
       carregarDocumentos(aluno.id);
       carregarTermoImagem(aluno.id);
@@ -445,18 +652,27 @@
       }
     }
 
-    document.getElementById('botaoEnviarFoto').addEventListener('click', async () => {
+    // A foto é enviada assim que é escolhida (não precisa de botão).
+    // Aluno novo: fica pendente e mostra a prévia até salvar o cadastro.
+    document.getElementById('inputFoto').addEventListener('change', async (evento) => {
+      const entrada = evento.target;
+      const arquivo = entrada.files[0];
+      entrada.value = '';
+      if (!arquivo || !arquivoValido(arquivo, false)) return;
+
       const alunoId = idAlunoAtual();
-      const arquivo = document.getElementById('inputFoto').files[0];
-      if (!alunoId || !arquivo) {
-        mostrarErro('Escolha um arquivo de foto antes de enviar.');
+      if (!alunoId) {
+        if (urlFotoPendente) URL.revokeObjectURL(urlFotoPendente);
+        pendentes.foto = arquivo;
+        urlFotoPendente = URL.createObjectURL(arquivo);
+        renderizarFoto(urlFotoPendente);
         return;
       }
+
       const formData = new FormData();
       formData.append('foto', arquivo);
       try {
         const resultado = await chamarApi(`/api/alunos/${alunoId}/foto`, { method: 'POST', body: formData });
-        document.getElementById('inputFoto').value = '';
         carregarFoto(alunoId, resultado.foto_path);
       } catch (erro) {
         mostrarErro(erro.message);
@@ -467,13 +683,20 @@
       const alunoId = idAlunoAtual();
       const tipo = document.getElementById('tipoDocumento').value.trim();
       const arquivo = document.getElementById('inputDocumento').files[0];
-      if (!alunoId) return;
       if (!tipo) {
         mostrarErro('Informe o tipo do documento.');
         return;
       }
       if (!arquivo) {
         mostrarErro('Escolha um arquivo antes de anexar.');
+        return;
+      }
+      if (!alunoId) {
+        if (!arquivoValido(arquivo, true)) return;
+        pendentes.documentos.push({ tipo, arquivo });
+        document.getElementById('tipoDocumento').value = '';
+        document.getElementById('inputDocumento').value = '';
+        renderizarDocumentosPendentes();
         return;
       }
       const formData = new FormData();
@@ -490,6 +713,12 @@
     });
 
     document.getElementById('listaDocumentos').addEventListener('click', async (evento) => {
+      const botaoPendente = evento.target.closest('[data-remover-documento-pendente]');
+      if (botaoPendente) {
+        pendentes.documentos.splice(Number(botaoPendente.dataset.removerDocumentoPendente), 1);
+        renderizarDocumentosPendentes();
+        return;
+      }
       const botao = evento.target.closest('[data-remover-documento]');
       if (!botao) return;
       const alunoId = idAlunoAtual();
@@ -503,7 +732,11 @@
 
     document.getElementById('botaoAceiteDigital').addEventListener('click', async () => {
       const alunoId = idAlunoAtual();
-      if (!alunoId) return;
+      if (!alunoId) {
+        pendentes.termo = { aceite: true };
+        renderizarTermoPendente();
+        return;
+      }
       try {
         await chamarApi(`/api/alunos/${alunoId}/termo-imagem/aceite`, { method: 'POST' });
         carregarTermoImagem(alunoId);
@@ -515,9 +748,15 @@
     document.getElementById('botaoEnviarTermoImagem').addEventListener('click', async () => {
       const alunoId = idAlunoAtual();
       const arquivo = document.getElementById('inputTermoImagem').files[0];
-      if (!alunoId) return;
       if (!arquivo) {
         mostrarErro('Escolha o arquivo assinado antes de enviar.');
+        return;
+      }
+      if (!alunoId) {
+        if (!arquivoValido(arquivo, true)) return;
+        pendentes.termo = { arquivo };
+        document.getElementById('inputTermoImagem').value = '';
+        renderizarTermoPendente();
         return;
       }
       const formData = new FormData();
@@ -530,6 +769,39 @@
         mostrarErro(erro.message);
       }
     });
+
+    // Envia o que foi anexado antes de o aluno existir. Devolve a lista de
+    // falhas (vazia se tudo deu certo) — uma falha não impede os outros envios.
+    async function enviarArquivosPendentes(alunoId) {
+      const falhas = [];
+      async function enviar(descricao, url, formData) {
+        try {
+          await chamarApi(url, { method: 'POST', body: formData });
+        } catch (erro) {
+          falhas.push(`${descricao}: ${erro.message}`);
+        }
+      }
+
+      if (pendentes.foto) {
+        const f = new FormData();
+        f.append('foto', pendentes.foto);
+        await enviar('foto', `/api/alunos/${alunoId}/foto`, f);
+      }
+      for (const doc of pendentes.documentos) {
+        const f = new FormData();
+        f.append('tipo', doc.tipo);
+        f.append('arquivo', doc.arquivo);
+        await enviar(`documento "${doc.tipo}"`, `/api/alunos/${alunoId}/documentos`, f);
+      }
+      if (pendentes.termo && pendentes.termo.aceite) {
+        await enviar('termo de imagem', `/api/alunos/${alunoId}/termo-imagem/aceite`);
+      } else if (pendentes.termo) {
+        const f = new FormData();
+        f.append('arquivo', pendentes.termo.arquivo);
+        await enviar('termo de imagem', `/api/alunos/${alunoId}/termo-imagem/arquivo`, f);
+      }
+      return falhas;
+    }
 
     // ---------- Responsáveis (lista dinâmica) ----------
 
@@ -547,11 +819,11 @@
           <div><label>Parentesco</label><input type="text" class="resp-parentesco" value="${dados.parentesco || ''}"></div>
         </div>
         <div class="linha">
-          <div><label>CPF</label><input type="text" class="resp-cpf" value="${dados.cpf || ''}"></div>
-          <div><label>RG</label><input type="text" class="resp-rg" value="${dados.rg || ''}"></div>
+          <div><label>CPF</label><input type="text" class="resp-cpf" data-mascara="cpf" placeholder="000.000.000-00" maxlength="14" inputmode="numeric" autocomplete="off" value="${dados.cpf || ''}"></div>
+          <div><label>RG</label><input type="text" class="resp-rg" data-mascara="rg" placeholder="00.000.000-0" maxlength="12" autocomplete="off" value="${dados.rg || ''}"></div>
         </div>
         <div class="linha">
-          <div><label>Telefone</label><input type="text" class="resp-telefone" value="${dados.telefone || ''}"></div>
+          <div><label>Telefone</label><input type="text" class="resp-telefone" data-mascara="telefone" placeholder="(00) 00000-0000" maxlength="15" inputmode="numeric" autocomplete="off" value="${dados.telefone || ''}"></div>
           <div><label>E-mail</label><input type="text" class="resp-email" value="${dados.email || ''}"></div>
         </div>
       `;
@@ -560,7 +832,32 @@
         atualizarRotulosResponsaveis();
       });
       document.getElementById('listaResponsaveis').appendChild(div);
+      reaplicarMascaras(div);
     }
+
+    // Responsável legal só é obrigatório para menores de 18 anos.
+    function alunoEhMaiorDeIdade() {
+      const valor = document.getElementById('data_nascimento').value;
+      if (!valor) return false;
+      const nascimento = new Date(valor);
+      if (Number.isNaN(nascimento.getTime())) return false;
+      const hoje = new Date();
+      let idade = hoje.getFullYear() - nascimento.getFullYear();
+      const antesDoAniversario =
+        hoje.getMonth() < nascimento.getMonth() ||
+        (hoje.getMonth() === nascimento.getMonth() && hoje.getDate() < nascimento.getDate());
+      if (antesDoAniversario) idade -= 1;
+      return idade >= 18;
+    }
+
+    function atualizarObrigatoriedadeResponsavel() {
+      const maior = alunoEhMaiorDeIdade();
+      document.getElementById('marcaResponsavelObrigatorio').style.display = maior ? 'none' : 'inline';
+      document.getElementById('avisoResponsavelOpcional').style.display = maior ? 'block' : 'none';
+    }
+
+    document.getElementById('data_nascimento').addEventListener('input', atualizarObrigatoriedadeResponsavel);
+    document.getElementById('data_nascimento').addEventListener('change', atualizarObrigatoriedadeResponsavel);
 
     function atualizarRotulosResponsaveis() {
       document.querySelectorAll('#listaResponsaveis .cartaoResponsavel').forEach((cartao, indice) => {
@@ -651,9 +948,14 @@
       document.getElementById('listaResponsaveis').innerHTML = '';
       criarLinhaResponsavel();
       document.getElementById('blocoStatus').style.display = 'none';
-      document.getElementById('blocoArquivos').style.display = 'none';
+      limparPendentes();
+      renderizarFoto(null);
+      renderizarDocumentosPendentes();
+      renderizarTermoPendente();
+      ['inputFoto', 'tipoDocumento', 'inputDocumento', 'inputTermoImagem'].forEach((id) => { document.getElementById(id).value = ''; });
       document.getElementById('blocoRematricula').innerHTML = '';
       document.getElementById('tituloForm').textContent = 'Novo aluno';
+      atualizarObrigatoriedadeResponsavel();
     }
 
     document.getElementById('botaoNovo').addEventListener('click', limparFormulario);
@@ -751,9 +1053,15 @@
       const alvo = evento.target.closest('.ver');
       if (!alvo) return;
 
+      await abrirAluno(alvo.dataset.id);
+    });
+
+    // Carrega a ficha de um aluno no formulário (usada ao clicar na lista
+    // e também ao salvar uma edição, para continuar na página do mesmo aluno).
+    async function abrirAluno(id) {
       let aluno;
       try {
-        aluno = await chamarApi(`/api/alunos/${alvo.dataset.id}`);
+        aluno = await chamarApi(`/api/alunos/${id}`);
       } catch (erro) {
         mostrarErro(`Não foi possível carregar esse aluno: ${erro.message}`);
         return;
@@ -761,6 +1069,8 @@
 
       document.getElementById('alunoId').value = aluno.id;
       camposTexto.forEach((campo) => { document.getElementById(campo).value = aluno[campo] || ''; });
+      reaplicarMascaras(document);
+      atualizarObrigatoriedadeResponsavel();
       camposBooleanos.forEach((campo) => {
         const el = document.getElementById(campo);
         el.checked = !!aluno[campo];
@@ -789,12 +1099,12 @@
       document.getElementById('dataEntradaListaEspera').value = aluno.data_entrada_lista_espera || '';
       document.getElementById('linhaDataListaEspera').style.display = aluno.status === 'lista_espera' ? 'block' : 'none';
 
-      document.getElementById('blocoArquivos').style.display = 'block';
       carregarArquivosDoAluno(aluno);
       carregarSituacaoMatricula(aluno.id);
 
       document.getElementById('tituloForm').textContent = `Editando: ${aluno.nome}`;
-    });
+    }
+
 
     document.getElementById('statusAtual').addEventListener('change', (e) => {
       document.getElementById('linhaDataListaEspera').style.display = e.target.value === 'lista_espera' ? 'block' : 'none';
@@ -824,7 +1134,7 @@
       dados.modalidade_ids = Array.from(document.querySelectorAll('.chk-modalidade:checked')).map((c) => c.value);
       dados.responsaveis = coletarResponsaveis().filter((r) => r.nome && r.nome.trim());
 
-      if (dados.responsaveis.length === 0) {
+      if (dados.responsaveis.length === 0 && !alunoEhMaiorDeIdade()) {
         mostrarErro('É obrigatório informar ao menos um responsável legal (com nome preenchido).');
         return;
       }
@@ -834,13 +1144,27 @@
       const metodo = id ? 'PUT' : 'POST';
 
       try {
-        await chamarApi(url, {
+        const resposta = await chamarApi(url, {
           method: metodo,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(dados)
         });
-        limparFormulario();
-        carregarLista();
+        if (!id) {
+          const falhas = await enviarArquivosPendentes(resposta.id);
+          carregarLista();
+          if (falhas.length > 0) {
+            // Aluno já foi criado: abre a ficha dele para tentar de novo os anexos.
+            await abrirAluno(resposta.id);
+            mostrarErro(`O aluno foi cadastrado, mas nem todos os anexos foram enviados: ${falhas.join(' ')}`);
+          } else {
+            limparFormulario();
+          }
+          return;
+        }
+        // Edição: continua na ficha do mesmo aluno, já com os dados salvos.
+        await abrirAluno(id);
+        carregarLista(document.getElementById('busca').value);
+        mostrarSucesso('Os dados do aluno foram atualizados.');
       } catch (erro) {
         mostrarErro(erro.message);
       }

@@ -15,6 +15,17 @@ const ErroApp = require('../utils/ErroApp');
 // o arquivo já teria sido gravado em disco pra um aluno inexistente, e
 // sobraria órfão lá (o multer processa o upload antes do handler da rota
 // executar, então o roteador precisa barrar no middleware, não dentro dela).
+// Responsável legal é obrigatório só para menores de 18 anos. Sem data de
+// nascimento não dá para saber a idade, então nesse caso continua obrigatório.
+function exigirResponsavelSeMenor(corpo) {
+  const idade = matriculasModel.calcularIdade(corpo.data_nascimento);
+  const maiorDeIdade = idade !== null && idade >= 18;
+  const semResponsavel = !Array.isArray(corpo.responsaveis) || corpo.responsaveis.length === 0;
+  if (!maiorDeIdade && semResponsavel) {
+    throw new ErroApp('É obrigatório informar ao menos um responsável legal.');
+  }
+}
+
 function exigirAlunoExistente(req, res, next) {
   if (!alunosModel.existe(req.params.id)) {
     throw new ErroApp('Aluno não encontrado.', 404);
@@ -50,7 +61,7 @@ const COLUNAS_EXPORTACAO = [
   { rotulo: 'E-mail', chave: 'email', largura: 26 },
   { rotulo: 'Escola', chave: 'escola', largura: 24 },
   { rotulo: 'Série', chave: 'serie_escola', largura: 12 },
-  { rotulo: 'Horário escolar', chave: 'horario_escola', largura: 16 },
+  { rotulo: 'Período escolar', chave: 'periodo_escola', largura: 16 },
   { rotulo: 'Possui convênio', chave: 'possui_convenio', largura: 14 },
   { rotulo: 'Qual convênio', chave: 'convenio_qual', largura: 20 },
   { rotulo: 'Status', chave: 'status', largura: 14 },
@@ -113,9 +124,7 @@ router.post('/', (req, res) => {
   if (!req.body.nome || !req.body.nome.trim()) {
     throw new ErroApp('O nome do aluno é obrigatório.');
   }
-  if (!Array.isArray(req.body.responsaveis) || req.body.responsaveis.length === 0) {
-    throw new ErroApp('É obrigatório informar ao menos um responsável legal.');
-  }
+  exigirResponsavelSeMenor(req.body);
   const id = alunosModel.criar(req.body);
   res.json({ id });
 });
@@ -124,9 +133,7 @@ router.put('/:id', (req, res) => {
   if (!req.body.nome || !req.body.nome.trim()) {
     throw new ErroApp('O nome do aluno é obrigatório.');
   }
-  if (!Array.isArray(req.body.responsaveis) || req.body.responsaveis.length === 0) {
-    throw new ErroApp('É obrigatório informar ao menos um responsável legal.');
-  }
+  exigirResponsavelSeMenor(req.body);
   if (!alunosModel.existe(req.params.id)) {
     throw new ErroApp('Aluno não encontrado.', 404);
   }
@@ -155,6 +162,11 @@ router.post('/:id/foto', exigirAlunoExistente, uploadFoto, (req, res) => {
   const fotoPath = `fotos/${req.file.filename}`;
   alunosModel.salvarFoto(req.params.id, fotoPath);
   res.json({ foto_path: fotoPath });
+});
+
+router.delete('/:id/foto', exigirAlunoExistente, (req, res) => {
+  alunosModel.removerFoto(req.params.id);
+  res.json({ ok: true });
 });
 
 // ---------- Documentos anexados ----------

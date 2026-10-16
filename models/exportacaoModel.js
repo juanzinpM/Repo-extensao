@@ -55,7 +55,7 @@ function montarFichaCompleta(alunoId, catalogos) {
     email: aluno.email,
     escola: aluno.escola,
     serie_escola: aluno.serie_escola,
-    horario_escola: aluno.horario_escola,
+    periodo_escola: aluno.periodo_escola,
     possui_convenio: simNao(aluno.possui_convenio),
     convenio_qual: aluno.convenio_qual,
     status: ROTULO_STATUS[aluno.status] || aluno.status,

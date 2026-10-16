@@ -1,7 +1,10 @@
 // models/alunosModel.js
 // Única camada que sabe como ler/gravar alunos no banco.
 // Rotas (routes/alunos.js) não têm SQL nenhum — só chamam essas funções.
+const fs = require('fs');
+const path = require('path');
 const db = require('../db');
+const { PASTA_UPLOADS } = require('../config');
 const responsaveisModel = require('./responsaveisModel');
 const matriculasModel = require('./matriculasModel');
 const ErroApp = require('../utils/ErroApp');
@@ -11,7 +14,7 @@ const STATUS_VALIDOS = ['ativo', 'inativo', 'lista_espera'];
 const camposAluno = [
   'nome', 'rg', 'cpf', 'data_nascimento', 'nome_pai', 'nome_mae',
   'endereco', 'bairro', 'complemento', 'telefone_fixo', 'celular', 'email',
-  'escola', 'serie_escola', 'horario_escola', 'possui_convenio', 'convenio_qual'
+  'escola', 'serie_escola', 'periodo_escola', 'possui_convenio', 'convenio_qual'
 ];
 
 const camposSaude = [
@@ -46,9 +49,17 @@ function listar(busca, status, modalidadeId) {
   }
 
   if (busca) {
-    condicoes.push('(a.nome LIKE ? OR a.cpf LIKE ?)');
+    // O CPF é salvo com máscara (000.000.000-00). Compara também sem pontuação,
+    // para a busca achar tanto "123.456" quanto "123456".
     const termo = `%${busca}%`;
-    parametros.push(termo, termo);
+    const apenasDigitos = String(busca).replace(/\D/g, '');
+    if (apenasDigitos) {
+      condicoes.push("(a.nome LIKE ? OR a.cpf LIKE ? OR REPLACE(REPLACE(a.cpf, '.', ''), '-', '') LIKE ?)");
+      parametros.push(termo, termo, `%${apenasDigitos}%`);
+    } else {
+      condicoes.push('(a.nome LIKE ? OR a.cpf LIKE ?)');
+      parametros.push(termo, termo);
+    }
   }
   if (status) {
     condicoes.push('a.status = ?');
@@ -147,8 +158,25 @@ function alterarStatus(id, status, dataEntradaListaEspera) {
   ).run(status, dataListaEspera, id);
 }
 
+// Apaga um arquivo de upload do disco (melhor esforço: se já não existir, segue).
+function apagarArquivoDeUpload(caminhoRelativo) {
+  if (!caminhoRelativo) return;
+  fs.unlink(path.join(__dirname, '..', PASTA_UPLOADS, caminhoRelativo), () => {});
+}
+
 function salvarFoto(id, fotoPath) {
+  // Ao trocar a foto, a anterior sai do disco para não acumular arquivo órfão.
+  const atual = db.prepare('SELECT foto_path FROM alunos WHERE id = ?').get(id);
   db.prepare('UPDATE alunos SET foto_path = ?, atualizado_em = CURRENT_TIMESTAMP WHERE id = ?').run(fotoPath, id);
+  if (atual && atual.foto_path && atual.foto_path !== fotoPath) {
+    apagarArquivoDeUpload(atual.foto_path);
+  }
+}
+
+function removerFoto(id) {
+  const atual = db.prepare('SELECT foto_path FROM alunos WHERE id = ?').get(id);
+  db.prepare('UPDATE alunos SET foto_path = NULL, atualizado_em = CURRENT_TIMESTAMP WHERE id = ?').run(id);
+  if (atual) apagarArquivoDeUpload(atual.foto_path);
 }
 
 function listarProblemasSaude() {
@@ -160,6 +188,6 @@ function listarDoencasContagiosas() {
 }
 
 module.exports = {
-  listar, buscarPorId, existe, criar, atualizar, alterarStatus, salvarFoto,
+  listar, buscarPorId, existe, criar, atualizar, alterarStatus, salvarFoto, removerFoto,
   listarProblemasSaude, listarDoencasContagiosas, STATUS_VALIDOS
 };
