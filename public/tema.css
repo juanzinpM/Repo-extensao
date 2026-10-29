@@ -123,3 +123,14 @@
   text-align: center;
   display: none;
 }
+
+/* ---------- Telas estreitas (celular): menu vira uma faixa no topo ---------- */
+@media (max-width: 760px) {
+  .layout { flex-direction: column; }
+  .sidebar { width: 100%; flex-direction: row; align-items: center; border-right: none; border-bottom: 0.5px solid var(--borda); }
+  .sidebar .areaLogo { padding: 8px 14px; border-bottom: none; }
+  .sidebar .areaLogo img { max-width: 70px; }
+  .sidebar nav { display: flex; padding: 0; }
+  .sidebar nav a { border-left: none; border-bottom: 3px solid transparent; padding: 18px 12px; }
+  .sidebar nav a.ativo { border-bottom-color: var(--coral); }
+}

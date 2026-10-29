@@ -64,5 +64,7 @@ function criarUpload(subpasta, tiposAceitos, campoArquivo) {
 module.exports = {
   uploadFoto: criarUpload('fotos', TIPOS_IMAGEM, 'foto'),
   uploadDocumento: criarUpload('documentos', TIPOS_DOCUMENTO, 'arquivo'),
-  uploadTermoImagem: criarUpload('termos-imagem', TIPOS_DOCUMENTO, 'arquivo')
+  uploadTermoImagem: criarUpload('termos-imagem', TIPOS_DOCUMENTO, 'arquivo'),
+  uploadFotoColaborador: criarUpload('colaboradores-fotos', TIPOS_IMAGEM, 'foto'),
+  uploadDocumentoColaborador: criarUpload('colaboradores-documentos', TIPOS_DOCUMENTO, 'arquivo')
 };

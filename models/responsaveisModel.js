@@ -1,7 +1,7 @@
 // models/responsaveisModel.js
 const db = require('../db');
 
-const campos = ['nome', 'cpf', 'rg', 'telefone', 'email', 'parentesco'];
+const campos = ['nome', 'cpf', 'telefone', 'email', 'parentesco'];
 
 function buscarPorCpf(cpf) {
   if (!cpf) return null;

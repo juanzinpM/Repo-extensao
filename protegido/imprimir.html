@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ficha — Instituto Missão Art</title>
+  <style>
+    :root { --coral: #DB5A61; --coral-claro: #FDF1F1; --carvao: #2A2224; --cinza: #6B615D; --borda: #E7E1DC; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #EDE8E3; color: var(--carvao); font-family: -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 12px; line-height: 1.4; }
+
+    .barraAcoes { position: sticky; top: 0; z-index: 5; display: flex; gap: 10px; align-items: center; justify-content: center; padding: 10px; background: #fff; border-bottom: 1px solid var(--borda); }
+    .barraAcoes button { border: none; border-radius: 6px; padding: 9px 18px; font-size: 13px; cursor: pointer; font-family: inherit; }
+    #botaoImprimir { background: var(--coral); color: #fff; font-weight: 600; }
+    #botaoFechar { background: #F1EFE8; color: var(--carvao); }
+    .barraAcoes span { font-size: 12px; color: var(--cinza); }
+
+    .folha { width: 210mm; min-height: 297mm; margin: 18px auto; background: #fff; padding: 14mm 15mm; box-shadow: 0 2px 14px rgba(0,0,0,0.12); }
+
+    .cabecalho { display: flex; align-items: center; gap: 16px; padding-bottom: 12px; border-bottom: 3px solid var(--coral); }
+    .cabecalho img.logo { height: 54px; }
+    .cabecalho .titulos { flex: 1; }
+    .cabecalho .tipoFicha { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--coral); font-weight: 700; }
+    .cabecalho .nomePessoa { font-size: 21px; font-weight: 700; margin-top: 2px; }
+    .cabecalho .meta { font-size: 11px; color: var(--cinza); margin-top: 3px; }
+    .fotoMoldura { width: 24mm; height: 32mm; border: 1px solid var(--borda); border-radius: 3px; background: #FAF7F4; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+    .fotoMoldura img { width: 100%; height: 100%; object-fit: cover; }
+    .fotoMoldura span { font-size: 9px; color: #A39A95; text-align: center; padding: 4px; }
+
+    .secao { margin-top: 15px; break-inside: avoid; }
+    .secao h2 { margin: 0 0 7px; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--coral); display: flex; align-items: center; gap: 8px; }
+    .secao h2::after { content: ''; flex: 1; height: 1px; background: var(--borda); }
+
+    .grade { display: grid; grid-template-columns: repeat(6, 1fr); gap: 7px 14px; }
+    .campo { grid-column: span 2; min-width: 0; }
+    .campo.c3 { grid-column: span 3; }
+    .campo.c4 { grid-column: span 4; }
+    .campo.c6 { grid-column: span 6; }
+    .campo .rotulo { font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--cinza); }
+    .campo .valor { min-height: 17px; padding-bottom: 2px; border-bottom: 1px solid var(--borda); font-size: 12.5px; overflow-wrap: anywhere; white-space: pre-wrap; }
+    .campo .valor.vazio { color: #B9B0AA; }
+
+    .cartaoResp { border: 1px solid var(--borda); border-radius: 5px; padding: 8px 10px 10px; margin-bottom: 7px; background: #FDFBFA; break-inside: avoid; }
+    .cartaoResp .nomeResp { font-weight: 700; margin-bottom: 5px; }
+
+    .etiquetas { display: flex; flex-wrap: wrap; gap: 5px; }
+    .etiqueta { background: var(--coral-claro); color: #A43F46; border: 1px solid #F3D3D5; border-radius: 20px; padding: 2px 10px; font-size: 11.5px; font-weight: 600; }
+    .nada { color: #B9B0AA; font-size: 12px; }
+
+    .linhasSaude { border: 1px solid var(--borda); border-radius: 5px; overflow: hidden; }
+    .linhaSaude { display: grid; grid-template-columns: 62mm 14mm 1fr; gap: 8px; padding: 5px 10px; border-bottom: 1px solid #F1ECE8; align-items: baseline; break-inside: avoid; }
+    .linhaSaude:last-child { border-bottom: none; }
+    .linhaSaude:nth-child(even) { background: #FDFBFA; }
+    .linhaSaude .pergunta { color: var(--cinza); }
+    .sim, .nao { font-weight: 700; font-size: 11px; }
+    .sim { color: #A43F46; }
+    .nao { color: #7C746F; }
+
+    table.tabela { width: 100%; border-collapse: collapse; }
+    table.tabela td { padding: 5px 4px; border-bottom: 1px solid #F1ECE8; }
+    table.tabela td.marca { width: 22px; font-weight: 700; }
+    .ok { color: #3B6D11; }
+    .pend { color: #B9B0AA; }
+
+    .assinaturas { display: flex; gap: 28px; margin-top: 34px; break-inside: avoid; }
+    .assinaturas div { flex: 1; border-top: 1px solid var(--carvao); padding-top: 4px; font-size: 10.5px; color: var(--cinza); text-align: center; }
+    .rodape { margin-top: 18px; font-size: 9.5px; color: #A39A95; display: flex; justify-content: space-between; }
+
+    @page { size: A4; margin: 0; }
+    @media print {
+      body { background: #fff; }
+      .barraAcoes { display: none; }
+      .folha { margin: 0; box-shadow: none; width: auto; min-height: 0; padding: 12mm 14mm; }
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <div class="barraAcoes">
+    <button type="button" id="botaoImprimir">Imprimir / salvar em PDF</button>
+    <button type="button" id="botaoFechar">Fechar</button>
+    <span>Na janela de impressão, escolha "Salvar como PDF" se quiser um arquivo.</span>
+  </div>
+  <div class="folha" id="folha"></div>
+
+  <script src="/erros.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    function el(tag, atributos, ...filhos) {
+      const e = document.createElement(tag);
+      Object.entries(atributos || {}).forEach(([k, v]) => {
+        if (k === 'text') e.textContent = v;
+        else if (k === 'class') e.className = v;
+        else e.setAttribute(k, v);
+      });
+      filhos.forEach((f) => { if (f !== null && f !== undefined) e.append(f); });
+      return e;
+    }
+
+    const DIAS = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+    const dataBR = (t) => (t && /^\d{4}-\d{2}-\d{2}/.test(t)) ? t.slice(0, 10).split('-').reverse().join('/') : '';
+    function idade(t) {
+      if (!t) return null;
+      const n = new Date(`${t.slice(0, 10)}T00:00:00`);
+      if (Number.isNaN(n.getTime())) return null;
+      const h = new Date();
+      let i = h.getFullYear() - n.getFullYear();
+      if (h.getMonth() < n.getMonth() || (h.getMonth() === n.getMonth() && h.getDate() < n.getDate())) i -= 1;
+      return i;
+    }
+
+    // ----- blocos reutilizáveis -----
+    function campo(rotulo, valor, tamanho) {
+      const texto = valor === null || valor === undefined ? '' : String(valor).trim();
+      return el('div', { class: `campo ${tamanho || ''}` },
+        el('div', { class: 'rotulo', text: rotulo }),
+        el('div', { class: texto ? 'valor' : 'valor vazio', text: texto || '—' }));
+    }
+    function secao(titulo, ...filhos) {
+      return el('section', { class: 'secao' }, el('h2', { text: titulo }), ...filhos);
+    }
+    function etiquetas(lista) {
+      if (!lista.length) return el('div', { class: 'nada', text: 'Nenhuma informada.' });
+      return el('div', { class: 'etiquetas' }, ...lista.map((n) => el('span', { class: 'etiqueta', text: n })));
+    }
+    function cabecalho(tipoFicha, nome, meta, fotoPath) {
+      const foto = el('div', { class: 'fotoMoldura' });
+      if (fotoPath) foto.append(el('img', { src: `/uploads/${fotoPath}`, alt: 'Foto' }));
+      else foto.append(el('span', { text: 'Foto 3x4' }));
+      return el('header', { class: 'cabecalho' },
+        el('img', { class: 'logo', src: '/img/logo.png', alt: 'Instituto Missão Art' }),
+        el('div', { class: 'titulos' },
+          el('div', { class: 'tipoFicha', text: tipoFicha }),
+          el('div', { class: 'nomePessoa', text: nome }),
+          el('div', { class: 'meta', text: meta })),
+        foto);
+    }
+    function rodape(rotuloAssinatura) {
+      return [
+        el('div', { class: 'assinaturas' },
+          el('div', { text: rotuloAssinatura }),
+          el('div', { text: 'Responsável pelo cadastro' }),
+          el('div', { text: 'Data' })),
+        el('div', { class: 'rodape' },
+          el('span', { text: 'Instituto Missão Art' }),
+          el('span', { text: `Impresso em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` }))
+      ];
+    }
+
+    // ----- Ficha do aluno -----
+    const PERGUNTAS_SAUDE = [
+      ['possui_deficiencia', 'Possui alguma deficiência', 'deficiencia_qual'],
+      ['fumante', 'Fumante', null],
+      ['usa_remedio_continuo', 'Usa remédio de uso contínuo', 'remedio_continuo_qual'],
+      ['ja_fez_cirurgia', 'Já fez alguma cirurgia', 'cirurgia_qual'],
+      ['possui_dores_lesoes', 'Possui dores ou lesões', 'dores_lesoes_qual'],
+      ['alergico', 'É alérgico', 'alergico_a_que'],
+      ['usa_medicamento_controlado', 'Usa medicamento controlado', 'medicamento_controlado_qual'],
+      ['alergico_a_medicamento', 'É alérgico a algum medicamento', 'alergico_medicamento_qual'],
+      ['solicitar_atestado_saude', 'Solicitar atestado de saúde', 'atestado_motivo']
+    ];
+
+    async function montarAluno(id) {
+      const [a, modalidades, problemas, doencas] = await Promise.all([
+        chamarApi(`/api/alunos/${id}`), chamarApi('/api/modalidades'),
+        chamarApi('/api/problemas-saude'), chamarApi('/api/doencas-contagiosas')
+      ]);
+      const anos = idade(a.data_nascimento);
+      const nomesModalidades = modalidades.filter((m) => (a.modalidade_ids || []).map(Number).includes(m.id)).map((m) => m.nome);
+      const nomesProblemas = problemas.filter((p) => (a.problemas_saude_ids || []).map(Number).includes(p.id)).map((p) => p.nome);
+      const nomesDoencas = doencas.filter((d) => (a.doencas_contagiosas_ids || []).map(Number).includes(d.id)).map((d) => d.nome);
+      if (a.outros_problemas_saude) nomesProblemas.push(a.outros_problemas_saude);
+      if (a.outras_doencas_contagiosas) nomesDoencas.push(a.outras_doencas_contagiosas);
+
+      const principais = el('div', { class: 'grade' },
+        campo('CPF', a.cpf, ''), campo('Data de nascimento', `${dataBR(a.data_nascimento)}${anos !== null ? ` (${anos} anos)` : ''}`, ''),
+        campo('Celular', a.celular, ''),
+        campo('Nome do pai', a.nome_pai, 'c3'), campo('Nome da mãe', a.nome_mae, 'c3'),
+        campo('Endereço', a.endereco, 'c4'), campo('Bairro', a.bairro, ''),
+        campo('Complemento', a.complemento, ''), campo('Telefone fixo', a.telefone_fixo, ''), campo('E-mail', a.email, ''),
+        campo('Escola', a.escola, 'c3'), campo('Nível de ensino', a.nivel_ensino, 'c3'),
+        campo('Período escolar', a.periodo_escola, ''),
+        campo('Convênio de saúde', a.possui_convenio ? (a.convenio_qual || 'Sim') : 'Não', 'c4'));
+
+      const responsaveis = (a.responsaveis || []).length
+        ? (a.responsaveis).map((r) => el('div', { class: 'cartaoResp' },
+            el('div', { class: 'nomeResp', text: r.nome }),
+            el('div', { class: 'grade' },
+              campo('Parentesco', r.parentesco, ''), campo('CPF', r.cpf, ''), campo('Telefone', r.telefone, ''),
+              campo('E-mail', r.email, 'c6'))))
+        : [el('div', { class: 'nada', text: 'Nenhum responsável informado.' })];
+
+      const linhasSaude = PERGUNTAS_SAUDE.map(([chave, pergunta, detalhe]) => el('div', { class: 'linhaSaude' },
+        el('span', { class: 'pergunta', text: pergunta }),
+        el('span', { class: a[chave] ? 'sim' : 'nao', text: a[chave] ? 'SIM' : 'NÃO' }),
+        el('span', { text: a[chave] && detalhe ? (a[detalhe] || '') : '' })));
+
+      const saude = el('div', {},
+        el('div', { class: 'campo c6', style: 'margin-bottom:8px;' }, el('div', { class: 'rotulo', text: 'Problemas de saúde' }), etiquetas(nomesProblemas)),
+        el('div', { class: 'campo c6', style: 'margin-bottom:10px;' }, el('div', { class: 'rotulo', text: 'Já teve doenças contagiosas' }), etiquetas(nomesDoencas)),
+        el('div', { class: 'linhasSaude' }, ...linhasSaude),
+        el('div', { class: 'grade', style: 'margin-top:10px;' }, campo('Observações', a.observacoes, 'c6')));
+
+      return [
+        cabecalho('Ficha do aluno', a.nome, `Cadastro nº ${a.id}`, a.foto_path),
+        secao('Dados principais', principais),
+        secao('Responsável legal', ...responsaveis),
+        secao('Modalidades', etiquetas(nomesModalidades)),
+        secao('Ficha de saúde', saude),
+        ...rodape('Assinatura do responsável')
+      ];
+    }
+
+    // ----- Ficha do colaborador -----
+    async function montarColaborador(id) {
+      const [c, modalidades, opcoes] = await Promise.all([
+        chamarApi(`/api/colaboradores/${id}`), chamarApi('/api/modalidades'), chamarApi('/api/colaboradores/opcoes')
+      ]);
+      const anos = idade(c.data_nascimento);
+      const nomesModalidades = modalidades.filter((m) => c.modalidade_ids.includes(m.id)).map((m) => m.nome);
+      const rotuloTipo = opcoes.tipos[c.tipo] || c.tipo;
+
+      const principais = el('div', { class: 'grade' },
+        campo('Tipo', rotuloTipo, ''), campo('Status', c.status === 'ativo' ? 'Ativo' : 'Inativo', ''), campo('Estado civil', c.estado_civil, ''),
+        campo('CPF', c.cpf, ''), campo('Data de nascimento', `${dataBR(c.data_nascimento)}${anos !== null ? ` (${anos} anos)` : ''}`, ''),
+        campo('Telefone/WhatsApp', c.telefone, ''),
+        campo('Endereço', c.endereco, 'c4'), campo('Bairro', c.bairro, ''),
+        campo('CEP', c.cep, ''), campo('E-mail', c.email, 'c4'),
+        campo('Formação', c.formacao, 'c3'), campo('Igreja que congrega', c.igreja, 'c3'),
+        campo('Chave Pix', c.chave_pix, 'c6'));
+
+      const disponibilidade = c.disponibilidades.length
+        ? el('table', { class: 'tabela' }, ...c.disponibilidades.map((d) => el('tr', {},
+            el('td', { text: DIAS[d.dia_semana], style: 'width:40mm; font-weight:600;' }),
+            el('td', { text: `${d.hora_inicio} ~ ${d.hora_fim}` }))))
+        : el('div', { class: 'nada', text: 'Nenhum dia e horário informado.' });
+
+      const entregues = new Set(c.documentos.map((d) => d.tipo));
+      const documentos = el('table', { class: 'tabela' }, ...Object.entries(opcoes.tipos_documento).map(([tipo, nome]) => el('tr', {},
+        el('td', { class: `marca ${entregues.has(tipo) ? 'ok' : 'pend'}`, text: entregues.has(tipo) ? '✓' : '○' }),
+        el('td', { text: nome }),
+        el('td', { class: entregues.has(tipo) ? 'ok' : 'pend', text: entregues.has(tipo) ? 'Entregue' : 'Pendente', style: 'text-align:right; font-weight:600;' }))));
+
+      return [
+        cabecalho(`Ficha de ${rotuloTipo.toLowerCase()}`, c.nome, `Cadastro nº ${c.id}`, c.foto_path),
+        secao('Dados principais', principais),
+        secao('Modalidades', etiquetas(nomesModalidades)),
+        secao('Dias e horários que pretende atuar', disponibilidade),
+        secao('Documentos', documentos),
+        ...rodape('Assinatura do colaborador')
+      ];
+    }
+
+    async function iniciar() {
+      const parametros = new URLSearchParams(location.search);
+      const tipo = parametros.get('tipo');
+      const id = Number(parametros.get('id'));
+      try {
+        if (!id || !['aluno', 'colaborador'].includes(tipo)) throw new Error('Link de impressão inválido.');
+        const partes = tipo === 'aluno' ? await montarAluno(id) : await montarColaborador(id);
+        $('folha').append(...partes);
+        document.title = `Ficha — ${$('folha').querySelector('.nomePessoa').textContent}`;
+      } catch (erro) {
+        mostrarErro(erro.message);
+      }
+    }
+
+    $('botaoImprimir').addEventListener('click', () => window.print());
+    $('botaoFechar').addEventListener('click', () => { window.close(); });
+    iniciar();
+  </script>
+</body>
+</html>

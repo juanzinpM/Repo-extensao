@@ -26,6 +26,19 @@ function criar(alunoId, tipo, arquivoPath) {
   return resultado.lastInsertRowid;
 }
 
+// Regras de convivência: um arquivo por aluno em cada ano letivo. Enviar de
+// novo substitui o anterior (e apaga o arquivo antigo do disco).
+const TIPO_REGRAS_CONVIVENCIA = 'Regras de convivência';
+
+function substituirPorTipo(alunoId, tipo, arquivoPath) {
+  const anoLetivo = matriculasModel.anoLetivoAtual();
+  const antigos = db.prepare(
+    'SELECT * FROM documentos WHERE aluno_id = ? AND ano_letivo_id = ? AND tipo = ?'
+  ).all(alunoId, anoLetivo.id, tipo);
+  antigos.forEach(remover);
+  return criar(alunoId, tipo, arquivoPath);
+}
+
 function remover(documento) {
   // Apaga o arquivo físico também — melhor esforço: se o arquivo já não
   // existir por algum motivo, apenas ignora e segue removendo do banco.
@@ -33,4 +46,4 @@ function remover(documento) {
   db.prepare('DELETE FROM documentos WHERE id = ?').run(documento.id);
 }
 
-module.exports = { listarPorAluno, buscarPorId, criar, remover };
+module.exports = { TIPO_REGRAS_CONVIVENCIA, listarPorAluno, buscarPorId, criar, substituirPorTipo, remover };

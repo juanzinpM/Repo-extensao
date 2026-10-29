@@ -69,6 +69,8 @@
       </div>
       <nav>
         <a href="/alunos.html" class="ativo">Alunos</a>
+        <a href="/colaboradores.html">Colaboradores</a>
+        <a href="/calendario.html">Calendário</a>
       </nav>
     </aside>
 
@@ -130,38 +132,50 @@
         <label style="margin-top:14px;">Ou envie o PDF/foto assinado</label>
         <input type="file" id="inputTermoImagem" accept="image/jpeg,image/png,image/webp,application/pdf">
         <button type="button" id="botaoEnviarTermoImagem" style="background:#F1EFE8; color:#2A2224; margin-top:8px; font-weight:400;">Enviar arquivo assinado</button>
+
+        <h2>Regras de convivência</h2>
+        <div id="statusRegras" style="font-size:12px; color:#6B615D; margin-bottom:8px;">Nenhum arquivo anexado ainda.</div>
+        <input type="file" id="inputRegras" accept="image/jpeg,image/png,image/webp,application/pdf">
       </div>
 
       <h2>Dados principais</h2>
       <label>Nome completo *</label>
       <input type="text" id="nome">
       <div class="linha">
-        <div><label>RG</label><input type="text" id="rg" data-mascara="rg" placeholder="00.000.000-0" maxlength="12" autocomplete="off"></div>
-        <div><label>CPF</label><input type="text" id="cpf" data-mascara="cpf" placeholder="000.000.000-00" maxlength="14" inputmode="numeric" autocomplete="off"></div>
+        <div><label>CPF *</label><input type="text" id="cpf" data-mascara="cpf" placeholder="000.000.000-00" maxlength="14" inputmode="numeric" autocomplete="off"></div>
       </div>
-      <label>Data de nascimento</label>
+      <label>Data de nascimento *</label>
       <input type="date" id="data_nascimento">
       <div class="linha">
-        <div><label>Nome do pai</label><input type="text" id="nome_pai"></div>
-        <div><label>Nome da mãe</label><input type="text" id="nome_mae"></div>
+        <div><label>Nome do pai *</label><input type="text" id="nome_pai"></div>
+        <div><label>Nome da mãe *</label><input type="text" id="nome_mae"></div>
       </div>
-      <label>Endereço</label>
+      <label>Endereço *</label>
       <input type="text" id="endereco">
       <div class="linha">
-        <div><label>Bairro</label><input type="text" id="bairro"></div>
+        <div><label>Bairro *</label><input type="text" id="bairro"></div>
         <div><label>Complemento</label><input type="text" id="complemento"></div>
       </div>
       <div class="linha">
         <div><label>Telefone fixo</label><input type="text" id="telefone_fixo" data-mascara="fixo" placeholder="(00) 0000-0000" maxlength="14" inputmode="numeric" autocomplete="off"></div>
-        <div><label>Celular</label><input type="text" id="celular" data-mascara="celular" placeholder="(00) 00000-0000" maxlength="15" inputmode="numeric" autocomplete="off"></div>
+        <div><label>Celular *</label><input type="text" id="celular" data-mascara="celular" placeholder="(00) 00000-0000" maxlength="15" inputmode="numeric" autocomplete="off"></div>
       </div>
-      <label>E-mail</label>
+      <label>E-mail *</label>
       <input type="email" id="email">
-      <label>Escola</label>
+      <label>Escola <span class="marcaEscola">*</span></label>
       <input type="text" id="escola">
       <div class="linha">
-        <div><label>Série</label><input type="text" id="serie_escola"></div>
-        <div><label>Período escolar</label>
+        <div><label>Nível de ensino <span class="marcaEscola">*</span></label>
+          <select id="nivel_ensino">
+            <option value="">Selecione</option>
+            <option value="Educação infantil">Educação infantil</option>
+            <option value="Ensino fundamental 1">Ensino fundamental 1</option>
+            <option value="Ensino fundamental 2">Ensino fundamental 2</option>
+            <option value="Ensino médio">Ensino médio</option>
+            <option value="Graduação">Graduação</option>
+          </select>
+        </div>
+        <div><label>Período escolar <span class="marcaEscola">*</span></label>
           <select id="periodo_escola">
             <option value="">Selecione</option>
             <option value="manhã">Manhã</option>
@@ -294,6 +308,7 @@
       <div class="botoes">
         <button id="botaoSalvar">Salvar aluno</button>
         <button id="botaoNovo" type="button">Novo</button>
+        <button type="button" id="botaoImprimirFicha" class="botaoSuave" style="background:#F1EFE8; color:#2A2224; font-weight:400; display:none;">Imprimir ficha</button>
       </div>
     </div>
 
@@ -330,9 +345,9 @@
   <script src="/layout.js"></script>
   <script>
     const camposTexto = [
-      'nome', 'rg', 'cpf', 'data_nascimento', 'nome_pai', 'nome_mae',
+      'nome', 'cpf', 'data_nascimento', 'nome_pai', 'nome_mae',
       'endereco', 'bairro', 'complemento', 'telefone_fixo', 'celular', 'email',
-      'escola', 'serie_escola', 'periodo_escola', 'convenio_qual',
+      'escola', 'nivel_ensino', 'periodo_escola', 'convenio_qual',
       'deficiencia_qual', 'outros_problemas_saude', 'outras_doencas_contagiosas',
       'remedio_continuo_qual', 'cirurgia_qual', 'dores_lesoes_qual',
       'alergico_a_que', 'medicamento_controlado_qual', 'alergico_medicamento_qual',
@@ -345,11 +360,11 @@
       'usa_medicamento_controlado', 'alergico_a_medicamento', 'solicitar_atestado_saude'
     ];
 
-    const camposResponsavel = ['nome', 'cpf', 'rg', 'telefone', 'email', 'parentesco'];
+    const camposResponsavel = ['nome', 'cpf', 'telefone', 'email', 'parentesco'];
 
 
     // ---------- Máscaras de formatação (padrão BR) ----------
-    // Só formata o que a pessoa digita — não valida se o CPF/RG existe.
+    // Só formata o que a pessoa digita — não valida se o CPF existe.
     function aplicarPadrao(digitos, padrao) {
       let resultado = '';
       let indice = 0;
@@ -366,8 +381,6 @@
 
     const mascaras = {
       cpf: (v) => aplicarPadrao(v.replace(/\D/g, '').slice(0, 11), '###.###.###-##'),
-      // RG varia por estado; usa o formato mais comum e aceita "X" no dígito final.
-      rg: (v) => aplicarPadrao(v.replace(/[^0-9xX]/g, '').toUpperCase().slice(0, 9), '##.###.###-#'),
       fixo: (v) => aplicarPadrao(v.replace(/\D/g, '').slice(0, 10), '(##) ####-####'),
       celular: (v) => aplicarPadrao(v.replace(/\D/g, '').slice(0, 11), '(##) #####-####'),
       // Campo único do responsável: 10 dígitos = fixo, 11 dígitos = celular.
@@ -449,13 +462,17 @@
     // Arquivos escolhidos antes de o aluno existir (cadastro novo). Ficam na
     // memória do navegador e são enviados logo depois que o aluno é salvo,
     // porque a API de upload precisa do id do aluno.
-    const pendentes = { foto: null, documentos: [], termo: null };
+    const pendentes = { foto: null, documentos: [], termo: null, regras: null };
+    const TIPO_REGRAS = 'Regras de convivência';
+    let regrasSalva = null; // documento de regras já gravado do aluno aberto
     let urlFotoPendente = null;
 
     function limparPendentes() {
       pendentes.foto = null;
       pendentes.documentos = [];
       pendentes.termo = null;
+      pendentes.regras = null;
+      regrasSalva = null;
       if (urlFotoPendente) { URL.revokeObjectURL(urlFotoPendente); urlFotoPendente = null; }
     }
 
@@ -539,6 +556,71 @@
       }
     });
 
+    // Regras de convivência: arquivo já salvo, escolhido e ainda pendente, ou nenhum.
+    function renderizarRegras() {
+      const status = document.getElementById('statusRegras');
+      status.replaceChildren();
+      if (regrasSalva) {
+        const link = document.createElement('a');
+        link.href = `/uploads/${regrasSalva.arquivo_path}`;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.textContent = 'ver arquivo';
+        link.style.color = '#DB5A61';
+        const remover = document.createElement('button');
+        remover.type = 'button';
+        remover.className = 'botaoRemover';
+        remover.id = 'botaoRemoverRegras';
+        remover.textContent = 'Remover';
+        status.append('Anexado · ', link, ' ', remover);
+      } else if (pendentes.regras) {
+        const remover = document.createElement('button');
+        remover.type = 'button';
+        remover.className = 'botaoRemover';
+        remover.id = 'botaoRemoverRegras';
+        remover.textContent = 'Remover';
+        status.append(`Selecionado: ${pendentes.regras.name} (será enviado ao salvar o aluno) `, remover);
+      } else {
+        status.textContent = 'Nenhum arquivo anexado ainda.';
+      }
+    }
+
+    document.getElementById('inputRegras').addEventListener('change', async (evento) => {
+      const arquivo = evento.target.files[0];
+      evento.target.value = '';
+      if (!arquivo || !arquivoValido(arquivo, true)) return;
+      const alunoId = idAlunoAtual();
+      if (!alunoId) {
+        pendentes.regras = arquivo;
+        renderizarRegras();
+        return;
+      }
+      const formData = new FormData();
+      formData.append('arquivo', arquivo);
+      try {
+        await chamarApi(`/api/alunos/${alunoId}/regras-convivencia`, { method: 'POST', body: formData });
+        carregarDocumentos(alunoId);
+      } catch (erro) {
+        mostrarErro(erro.message);
+      }
+    });
+
+    document.getElementById('statusRegras').addEventListener('click', async (evento) => {
+      if (evento.target.id !== 'botaoRemoverRegras') return;
+      const alunoId = idAlunoAtual();
+      try {
+        if (alunoId && regrasSalva) {
+          await chamarApi(`/api/alunos/${alunoId}/documentos/${regrasSalva.id}`, { method: 'DELETE' });
+          carregarDocumentos(alunoId);
+        } else {
+          pendentes.regras = null;
+          renderizarRegras();
+        }
+      } catch (erro) {
+        mostrarErro(erro.message);
+      }
+    });
+
     function renderizarDocumentosPendentes() {
       const container = document.getElementById('listaDocumentos');
       container.innerHTML = pendentes.documentos.length === 0
@@ -559,7 +641,10 @@
     async function carregarDocumentos(alunoId) {
       const container = document.getElementById('listaDocumentos');
       try {
-        const documentos = await chamarApi(`/api/alunos/${alunoId}/documentos`);
+        let documentos = await chamarApi(`/api/alunos/${alunoId}/documentos`);
+        regrasSalva = documentos.find((doc) => doc.tipo === TIPO_REGRAS) || null;
+        renderizarRegras();
+        documentos = documentos.filter((doc) => doc.tipo !== TIPO_REGRAS);
         container.innerHTML = documentos.length === 0
           ? 'Nenhum documento anexado ainda.'
           : documentos.map((doc) => `
@@ -793,6 +878,11 @@
         f.append('arquivo', doc.arquivo);
         await enviar(`documento "${doc.tipo}"`, `/api/alunos/${alunoId}/documentos`, f);
       }
+      if (pendentes.regras) {
+        const f = new FormData();
+        f.append('arquivo', pendentes.regras);
+        await enviar('regras de convivência', `/api/alunos/${alunoId}/regras-convivencia`, f);
+      }
       if (pendentes.termo && pendentes.termo.aceite) {
         await enviar('termo de imagem', `/api/alunos/${alunoId}/termo-imagem/aceite`);
       } else if (pendentes.termo) {
@@ -820,7 +910,6 @@
         </div>
         <div class="linha">
           <div><label>CPF</label><input type="text" class="resp-cpf" data-mascara="cpf" placeholder="000.000.000-00" maxlength="14" inputmode="numeric" autocomplete="off" value="${dados.cpf || ''}"></div>
-          <div><label>RG</label><input type="text" class="resp-rg" data-mascara="rg" placeholder="00.000.000-0" maxlength="12" autocomplete="off" value="${dados.rg || ''}"></div>
         </div>
         <div class="linha">
           <div><label>Telefone</label><input type="text" class="resp-telefone" data-mascara="telefone" placeholder="(00) 00000-0000" maxlength="15" inputmode="numeric" autocomplete="off" value="${dados.telefone || ''}"></div>
@@ -850,8 +939,22 @@
       return idade >= 18;
     }
 
+    // Dados principais obrigatórios. Telefone fixo e complemento são opcionais;
+    // escola, nível e período escolar só são exigidos de menores de 18 anos.
+    const OBRIGATORIOS = [
+      ['nome', 'Nome completo'], ['cpf', 'CPF'], ['data_nascimento', 'Data de nascimento'],
+      ['nome_pai', 'Nome do pai'], ['nome_mae', 'Nome da mãe'], ['endereco', 'Endereço'],
+      ['bairro', 'Bairro'], ['celular', 'Celular'], ['email', 'E-mail']
+    ];
+    const OBRIGATORIOS_ESCOLA = [['escola', 'Escola'], ['nivel_ensino', 'Nível de ensino'], ['periodo_escola', 'Período escolar']];
+    function camposObrigatoriosFaltando(dados) {
+      const lista = OBRIGATORIOS.concat(alunoEhMaiorDeIdade() ? [] : OBRIGATORIOS_ESCOLA);
+      return lista.filter(([campo]) => !String(dados[campo] || '').trim()).map(([, rotulo]) => rotulo);
+    }
+
     function atualizarObrigatoriedadeResponsavel() {
       const maior = alunoEhMaiorDeIdade();
+      document.querySelectorAll('.marcaEscola').forEach((m) => { m.style.display = maior ? 'none' : 'inline'; });
       document.getElementById('marcaResponsavelObrigatorio').style.display = maior ? 'none' : 'inline';
       document.getElementById('avisoResponsavelOpcional').style.display = maior ? 'block' : 'none';
     }
@@ -936,8 +1039,30 @@
       }
     });
 
+    // Aluno cadastrado antes das listas fixas pode ter um texto livre (ex.: "5º ano")
+    // que não existe no dropdown. Mostra o valor antigo como opção extra, para que
+    // salvar a ficha sem mexer nesse campo não apague a informação sem aviso.
+    const selectsComListaFixa = ['nivel_ensino', 'periodo_escola'];
+
+    function preservarValoresAntigosDosSelects(aluno) {
+      selectsComListaFixa.forEach((campo) => {
+        const select = document.getElementById(campo);
+        select.querySelectorAll('option[data-antigo]').forEach((o) => o.remove());
+        const valor = aluno ? aluno[campo] : '';
+        if (valor && select.value !== valor) {
+          const opcao = document.createElement('option');
+          opcao.value = valor;
+          opcao.textContent = `${valor} (valor antigo)`;
+          opcao.dataset.antigo = '1';
+          select.appendChild(opcao);
+          select.value = valor;
+        }
+      });
+    }
+
     function limparFormulario() {
       document.getElementById('alunoId').value = '';
+      preservarValoresAntigosDosSelects(null);
       camposTexto.forEach((campo) => { document.getElementById(campo).value = ''; });
       camposBooleanos.forEach((campo) => {
         const el = document.getElementById(campo);
@@ -951,14 +1076,22 @@
       limparPendentes();
       renderizarFoto(null);
       renderizarDocumentosPendentes();
+      renderizarRegras();
       renderizarTermoPendente();
       ['inputFoto', 'tipoDocumento', 'inputDocumento', 'inputTermoImagem'].forEach((id) => { document.getElementById(id).value = ''; });
       document.getElementById('blocoRematricula').innerHTML = '';
       document.getElementById('tituloForm').textContent = 'Novo aluno';
+      document.getElementById('botaoImprimirFicha').style.display = 'none';
       atualizarObrigatoriedadeResponsavel();
     }
 
     document.getElementById('botaoNovo').addEventListener('click', limparFormulario);
+
+    // Abre a ficha para impressão em outra aba (mostra o que está salvo, não o que está sendo digitado).
+    document.getElementById('botaoImprimirFicha').addEventListener('click', () => {
+      const id = document.getElementById('alunoId').value;
+      if (id) window.open(`/imprimir.html?tipo=aluno&id=${id}`, '_blank');
+    });
 
     function renderizarLinhasAlunos(alunos) {
       const corpo = document.getElementById('corpoTabela');
@@ -1069,6 +1202,7 @@
 
       document.getElementById('alunoId').value = aluno.id;
       camposTexto.forEach((campo) => { document.getElementById(campo).value = aluno[campo] || ''; });
+      preservarValoresAntigosDosSelects(aluno);
       reaplicarMascaras(document);
       atualizarObrigatoriedadeResponsavel();
       camposBooleanos.forEach((campo) => {
@@ -1103,6 +1237,7 @@
       carregarSituacaoMatricula(aluno.id);
 
       document.getElementById('tituloForm').textContent = `Editando: ${aluno.nome}`;
+      document.getElementById('botaoImprimirFicha').style.display = 'inline-block';
     }
 
 
@@ -1133,6 +1268,12 @@
       dados.doencas_contagiosas_ids = Array.from(document.querySelectorAll('.chk-doenca:checked')).map((c) => c.value);
       dados.modalidade_ids = Array.from(document.querySelectorAll('.chk-modalidade:checked')).map((c) => c.value);
       dados.responsaveis = coletarResponsaveis().filter((r) => r.nome && r.nome.trim());
+
+      const faltando = camposObrigatoriosFaltando(dados);
+      if (faltando.length > 0) {
+        mostrarErro(`Preencha os campos obrigatórios: ${faltando.join(', ')}.`);
+        return;
+      }
 
       if (dados.responsaveis.length === 0 && !alunoEhMaiorDeIdade()) {
         mostrarErro('É obrigatório informar ao menos um responsável legal (com nome preenchido).');

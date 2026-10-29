@@ -29,7 +29,7 @@ function criar(nome, publico) {
   }
   const publicoValido = publico === 'adulto_e_infantil' ? 'adulto_e_infantil' : 'infantil';
 
-  // "Box", "box" e "BOX" (e também "Inglês"/"Ingles") são a mesma modalidade.
+  // "Boxe", "boxe" e "BOXE" (e também "Inglês"/"Ingles") são a mesma modalidade.
   // A comparação é feita aqui, e não no SQL, porque o NOCASE do SQLite só
   // ignora maiúsculas do alfabeto ASCII (não funcionaria com "Inglês" x "INGLÊS").
   const nomeNormalizado = normalizarNome(nome);

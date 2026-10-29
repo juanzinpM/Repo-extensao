@@ -42,7 +42,6 @@ function montarFichaCompleta(alunoId, catalogos) {
   return {
     nome: aluno.nome,
     cpf: aluno.cpf,
-    rg: aluno.rg,
     data_nascimento: aluno.data_nascimento,
     idade: matriculasModel.calcularIdade(aluno.data_nascimento),
     nome_pai: aluno.nome_pai,
@@ -54,7 +53,7 @@ function montarFichaCompleta(alunoId, catalogos) {
     celular: aluno.celular,
     email: aluno.email,
     escola: aluno.escola,
-    serie_escola: aluno.serie_escola,
+    nivel_ensino: aluno.nivel_ensino,
     periodo_escola: aluno.periodo_escola,
     possui_convenio: simNao(aluno.possui_convenio),
     convenio_qual: aluno.convenio_qual,

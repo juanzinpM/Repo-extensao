@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Colaboradores — Instituto Missão Art</title>
+  <link rel="stylesheet" href="/tema.css">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: #FAF7F4; margin: 0; color: #2A2224; }
+    h2 { font-size: 14px; margin: 22px 0 4px; color: #2A2224; border-top: 0.5px solid #EFE9E4; padding-top: 16px; }
+    .area-pagina { padding: 24px 32px; }
+    .conteudo { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+    .cartao { background: #fff; border: 0.5px solid #E7E1DC; border-radius: 8px; padding: 20px; }
+    #painelForm { flex: 1; min-width: 340px; max-height: 82vh; overflow-y: auto; }
+    #painelLista { flex: 1.1; min-width: 380px; }
+    label { display: block; font-size: 12px; color: #6B615D; margin: 10px 0 4px; font-weight: 600; }
+    input, select { width: 100%; padding: 7px 9px; border: 1px solid #D8D1CB; border-radius: 5px; font-size: 13px; font-family: inherit; font-weight: 400; background: #fff; }
+    .linha { display: flex; gap: 10px; }
+    .linha > div { flex: 1; }
+    .checkgrupo { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 6px; }
+    .checkitem { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 400; margin: 0; }
+    .checkitem input { width: auto; }
+    .botoes { display: flex; gap: 8px; margin-top: 18px; position: sticky; bottom: 0; background: #fff; padding-top: 10px; }
+    button { padding: 8px 16px; border-radius: 6px; border: none; font-size: 13px; cursor: pointer; font-family: inherit; }
+    #botaoSalvar { background: #DB5A61; color: #fff; font-weight: 500; }
+    #botaoNovo, .botaoSuave { background: #F1EFE8; color: #2A2224; font-weight: 400; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; color: #9C918C; font-size: 11px; padding: 6px 8px; border-bottom: 0.5px solid #EFE9E4; }
+    td { padding: 9px 8px; border-bottom: 0.5px solid #F3EEEA; }
+    tr:hover td { background: #FAF7F4; }
+    .pill { font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: 20px; }
+    .pill-ativo { color: #3B6D11; background: #EAF3DE; }
+    .pill-inativo { color: #5F5E5A; background: #F1EFE8; }
+    .ver { cursor: pointer; color: #8C837E; }
+    #painelLista > .linha { margin-bottom: 12px; }
+    .botaoStatusRapido { background: #F1EFE8; color: #2A2224; font-size: 12px; padding: 5px 10px; white-space: nowrap; }
+    .botaoRemover { background: none; color: #A32D2D; font-size: 12px; padding: 2px 6px; }
+    .dicaCampo { font-size: 12px; color: #6B615D; margin: 2px 0 0; }
+    .linhaDisp { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+    .linhaDisp select { flex: 1.3; }
+    .linhaDisp input { flex: 1; }
+    .linhaDisp span { font-size: 12px; color: #6B615D; }
+    .itemDocumento {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      border: 1px solid #E7E1DC; border-radius: 6px; padding: 8px 10px; margin-top: 8px; background: #FDFBFA;
+    }
+    .itemDocumento .nomeDoc { font-size: 13px; font-weight: 600; }
+    .itemDocumento .estadoDoc { font-size: 12px; color: #6B615D; margin-top: 2px; }
+    .itemDocumento .estadoDoc.enviado { color: #3B6D11; }
+    .itemDocumento .estadoDoc a { color: #DB5A61; text-decoration: none; }
+    .itemDocumento input[type=file] { font-size: 12px; padding: 4px; max-width: 210px; }
+    #previewFoto img { max-width: 120px; border-radius: 6px; display: block; cursor: zoom-in; }
+    @media (max-width: 760px) {
+      .area-pagina { padding: 16px; }
+      .itemDocumento { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="areaLogo">
+        <img src="/img/logo.png" alt="Instituto Missão Art">
+      </div>
+      <nav>
+        <a href="/alunos.html">Alunos</a>
+        <a href="/colaboradores.html" class="ativo">Colaboradores</a>
+        <a href="/calendario.html">Calendário</a>
+      </nav>
+    </aside>
+
+    <div class="areaPrincipal">
+      <div id="avisoAmbiente">
+        Ambiente de TESTE — estes dados não são reais e podem ser apagados a qualquer momento.
+      </div>
+      <div class="topbar">
+        <span class="avatar" id="avatarInicial"></span>
+        <span class="nomeUsuario" id="nomeUsuario"></span>
+        <button type="button" class="botaoSair" id="botaoSair">Sair</button>
+      </div>
+
+      <div class="area-pagina">
+        <div class="conteudo">
+
+          <div class="cartao" id="painelForm">
+            <strong id="tituloForm">Novo colaborador</strong>
+            <input type="hidden" id="colaboradorId">
+
+            <h2 style="border-top:none; padding-top:0;">Foto 3x4</h2>
+            <div id="previewFoto" style="font-size:12px; color:#6B615D; margin-bottom:8px;">Nenhuma foto ainda.</div>
+            <input type="file" id="inputFoto" accept="image/jpeg,image/png,image/webp">
+
+            <h2>Dados principais</h2>
+            <div class="linha">
+              <div><label>Tipo *</label>
+                <select id="tipo"><option value="">Selecione</option></select>
+              </div>
+              <div><label>Status</label>
+                <select id="status">
+                  <option value="ativo">Ativo</option>
+                  <option value="inativo">Inativo</option>
+                </select>
+              </div>
+            </div>
+            <label>Nome completo *</label>
+            <input type="text" id="nome" maxlength="200">
+            <div class="linha">
+              <div><label>Data de nascimento *</label><input type="date" id="data_nascimento"></div>
+              <div><label>Estado civil *</label>
+                <select id="estado_civil"><option value="">Selecione</option></select>
+              </div>
+            </div>
+            <div class="linha">
+              <div><label>CPF *</label><input type="text" id="cpf" data-mascara="cpf" placeholder="000.000.000-00" maxlength="14" inputmode="numeric" autocomplete="off"></div>
+              <div><label>Telefone/WhatsApp *</label><input type="text" id="telefone" data-mascara="telefone" placeholder="(00) 00000-0000" maxlength="15" inputmode="numeric" autocomplete="off"></div>
+            </div>
+            <label>Endereço *</label>
+            <input type="text" id="endereco" maxlength="200">
+            <div class="linha">
+              <div><label>Bairro *</label><input type="text" id="bairro" maxlength="200"></div>
+              <div><label>CEP *</label><input type="text" id="cep" data-mascara="cep" placeholder="00000-000" maxlength="9" inputmode="numeric" autocomplete="off"></div>
+            </div>
+            <label>E-mail *</label>
+            <input type="email" id="email" maxlength="200">
+            <label>Formação</label>
+            <input type="text" id="formacao" maxlength="200" placeholder="Ex: Pedagogia, Educação Física, Música">
+            <div class="linha">
+              <div><label>Chave Pix</label><input type="text" id="chave_pix" maxlength="200"></div>
+              <div><label>Igreja que congrega</label><input type="text" id="igreja" maxlength="200"></div>
+            </div>
+
+            <h2>Modalidades</h2>
+            <p class="dicaCampo">Em quais modalidades o colaborador pretende atuar.</p>
+            <div class="checkgrupo" id="grupoModalidades"></div>
+
+            <h2>Dias e horários que pretende atuar</h2>
+            <div id="listaDisponibilidades"></div>
+            <button type="button" id="botaoAddDisponibilidade" class="botaoSuave" style="margin-top:10px;">+ Adicionar dia e horário</button>
+
+            <h2>Documentos</h2>
+            <p class="dicaCampo">Opcionais. Aceita PDF, JPEG, PNG ou WEBP de até 5 MB. Enviar de novo substitui o anterior.</p>
+            <div id="listaDocumentos"></div>
+
+            <div class="botoes">
+              <button type="button" id="botaoSalvar">Salvar colaborador</button>
+              <button type="button" id="botaoNovo">Novo</button>
+              <button type="button" id="botaoImprimirFicha" class="botaoSuave" style="background:#F1EFE8; color:#2A2224; font-weight:400; display:none;">Imprimir ficha</button>
+            </div>
+          </div>
+
+          <div class="cartao" id="painelLista">
+            <div class="linha">
+              <input type="text" id="busca" placeholder="Buscar por nome, CPF ou e-mail">
+              <select id="filtroStatus" style="flex: 0 0 150px;">
+                <option value="">Todos os status</option>
+                <option value="ativo">Ativo</option>
+                <option value="inativo">Inativo</option>
+              </select>
+              <select id="filtroTipo" style="flex: 0 0 140px;">
+                <option value="">Todos os tipos</option>
+              </select>
+              <select id="filtroModalidade" style="flex: 0 0 170px;">
+                <option value="">Todas as modalidades</option>
+              </select>
+            </div>
+            <table>
+              <thead><tr><th>Nome</th><th>Tipo</th><th>Telefone</th><th>Modalidades</th><th>Status</th><th></th><th></th></tr></thead>
+              <tbody id="corpoTabela"></tbody>
+            </table>
+            <p id="listaVazia" class="dicaCampo" style="display:none; margin-top:12px;">Nenhum colaborador encontrado.</p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/erros.js"></script>
+  <script src="/layout.js"></script>
+  <script>
+    const DIAS = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+    const TIPOS_ARQUIVO = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    const TAMANHO_MAXIMO_MB = 5;
+    const camposTexto = [
+      'tipo', 'status', 'nome', 'data_nascimento', 'estado_civil', 'cpf', 'telefone', 'endereco', 'bairro', 'cep',
+      'email', 'formacao', 'chave_pix', 'igreja'
+    ];
+    const OBRIGATORIOS = [
+      ['tipo', 'Tipo'], ['nome', 'Nome completo'], ['data_nascimento', 'Data de nascimento'], ['estado_civil', 'Estado civil'],
+      ['cpf', 'CPF'], ['telefone', 'Telefone/WhatsApp'], ['endereco', 'Endereço'],
+      ['bairro', 'Bairro'], ['cep', 'CEP'], ['email', 'E-mail']
+    ];
+
+    let tiposDocumento = {};   // chave -> nome
+    let atual = null;          // colaborador aberto (null = cadastro novo)
+    const pendentes = { foto: null, documentos: {} }; // arquivos escolhidos antes de existir o cadastro
+    let urlFotoPendente = null;
+
+    const $ = (id) => document.getElementById(id);
+
+    function el(tag, atributos, ...filhos) {
+      const e = document.createElement(tag);
+      Object.entries(atributos || {}).forEach(([k, v]) => {
+        if (k === 'text') e.textContent = v;
+        else if (k === 'class') e.className = v;
+        else e.setAttribute(k, v);
+      });
+      filhos.forEach((f) => { if (f !== null && f !== undefined) e.append(f); });
+      return e;
+    }
+
+    // ---------- Máscaras ----------
+    function aplicarPadrao(digitos, padrao) {
+      let resultado = '';
+      let i = 0;
+      for (const c of padrao) {
+        if (i >= digitos.length) break;
+        if (c === '#') { resultado += digitos[i]; i += 1; } else { resultado += c; }
+      }
+      return resultado;
+    }
+    const mascaras = {
+      cpf: (v) => aplicarPadrao(v.replace(/\D/g, '').slice(0, 11), '###.###.###-##'),
+      cep: (v) => aplicarPadrao(v.replace(/\D/g, '').slice(0, 8), '#####-###'),
+      telefone: (v) => {
+        const d = v.replace(/\D/g, '').slice(0, 11);
+        return aplicarPadrao(d, d.length > 10 ? '(##) #####-####' : '(##) ####-####');
+      }
+    };
+    document.addEventListener('input', (e) => {
+      const campo = e.target;
+      if (campo.dataset && campo.dataset.mascara) campo.value = mascaras[campo.dataset.mascara](campo.value);
+    });
+
+    // ---------- Modal de sucesso e imagem ampliada ----------
+    function mostrarSucesso(mensagem) {
+      const fundo = el('div', { style: 'position:fixed; inset:0; background:rgba(42,37,35,0.45); display:flex; align-items:center; justify-content:center; z-index:1000;' });
+      const caixa = el('div', { role: 'dialog', 'aria-modal': 'true', style: 'background:#fff; border-radius:10px; padding:22px; width:320px; max-width:90vw; box-shadow:0 4px 24px rgba(0,0,0,0.18);' },
+        el('strong', { text: 'Tudo certo', style: 'font-size:14px;' }),
+        el('p', { text: mensagem, style: 'font-size:13px; margin:10px 0 16px; line-height:1.45;' }),
+        el('button', { type: 'button', text: 'OK', style: 'background:#DB5A61; color:#fff; padding:8px 16px;' }));
+      fundo.append(caixa);
+      function fechar() { document.removeEventListener('keydown', aoTeclar); fundo.remove(); }
+      function aoTeclar(e) { if (e.key === 'Escape' || e.key === 'Enter') fechar(); }
+      fundo.addEventListener('click', (e) => { if (e.target === fundo || e.target.tagName === 'BUTTON') fechar(); });
+      document.addEventListener('keydown', aoTeclar);
+      document.body.append(fundo);
+      caixa.querySelector('button').focus();
+    }
+
+    function abrirImagemAmpliada(src) {
+      const fundo = el('div', { style: 'position:fixed; inset:0; background:rgba(42,37,35,0.8); display:flex; align-items:center; justify-content:center; z-index:1000; cursor:zoom-out;' });
+      fundo.append(el('img', { src, style: 'max-width:90vw; max-height:90vh; border-radius:8px; box-shadow:0 4px 24px rgba(0,0,0,0.4);' }));
+      function fechar() { document.removeEventListener('keydown', aoTeclar); fundo.remove(); }
+      function aoTeclar(e) { if (e.key === 'Escape') fechar(); }
+      fundo.addEventListener('click', fechar);
+      document.addEventListener('keydown', aoTeclar);
+      document.body.append(fundo);
+    }
+
+    // ---------- Arquivos ----------
+    function arquivoValido(arquivo, aceitaPdf) {
+      const tipos = aceitaPdf ? TIPOS_ARQUIVO : TIPOS_ARQUIVO.filter((t) => t !== 'application/pdf');
+      if (!tipos.includes(arquivo.type)) {
+        mostrarErro(aceitaPdf ? 'Tipo de arquivo não permitido. Use JPEG, PNG, WEBP ou PDF.' : 'Tipo de arquivo não permitido. Use JPEG, PNG ou WEBP.');
+        return false;
+      }
+      if (arquivo.size > TAMANHO_MAXIMO_MB * 1024 * 1024) {
+        mostrarErro(`Arquivo muito grande. Tamanho máximo: ${TAMANHO_MAXIMO_MB}MB.`);
+        return false;
+      }
+      return true;
+    }
+
+    function enviarArquivo(url, campo, arquivo) {
+      const formulario = new FormData();
+      formulario.append(campo, arquivo);
+      return chamarApi(url, { method: 'POST', body: formulario });
+    }
+
+    function limparPendentes() {
+      pendentes.foto = null;
+      pendentes.documentos = {};
+      if (urlFotoPendente) { URL.revokeObjectURL(urlFotoPendente); urlFotoPendente = null; }
+    }
+
+    // ----- Foto -----
+    function renderizarFoto(src) {
+      const preview = $('previewFoto');
+      preview.replaceChildren();
+      if (!src) { preview.textContent = 'Nenhuma foto ainda.'; return; }
+      const imagem = el('img', { id: 'imagemFoto', src, title: 'Clique para ampliar', alt: 'Foto 3x4' });
+      const remover = el('button', { type: 'button', id: 'botaoRemoverFoto', class: 'botaoRemover', text: 'Remover foto', style: 'margin-top:8px;' });
+      preview.append(imagem, remover);
+    }
+
+    $('previewFoto').addEventListener('click', async (e) => {
+      if (e.target.id === 'imagemFoto') { abrirImagemAmpliada(e.target.src); return; }
+      if (e.target.id !== 'botaoRemoverFoto') return;
+      try {
+        if (atual) {
+          await chamarApi(`/api/colaboradores/${atual.id}/foto`, { method: 'DELETE' });
+          atual.foto_path = null;
+          carregarLista();
+        } else {
+          pendentes.foto = null;
+          if (urlFotoPendente) { URL.revokeObjectURL(urlFotoPendente); urlFotoPendente = null; }
+        }
+        renderizarFoto(null);
+      } catch (erro) { mostrarErro(erro.message); }
+    });
+
+    $('inputFoto').addEventListener('change', async (e) => {
+      const arquivo = e.target.files[0];
+      e.target.value = '';
+      if (!arquivo || !arquivoValido(arquivo, false)) return;
+      try {
+        if (atual) {
+          const r = await enviarArquivo(`/api/colaboradores/${atual.id}/foto`, 'foto', arquivo);
+          atual.foto_path = r.foto_path;
+          renderizarFoto(`/uploads/${r.foto_path}?v=${Date.now()}`);
+        } else {
+          if (urlFotoPendente) URL.revokeObjectURL(urlFotoPendente);
+          pendentes.foto = arquivo;
+          urlFotoPendente = URL.createObjectURL(arquivo);
+          renderizarFoto(urlFotoPendente);
+        }
+      } catch (erro) { mostrarErro(erro.message); }
+    });
+
+    // ----- Documentos -----
+    function renderizarDocumentos() {
+      const lista = $('listaDocumentos');
+      lista.replaceChildren();
+      Object.entries(tiposDocumento).forEach(([tipo, nome]) => {
+        const salvo = atual && (atual.documentos || []).find((d) => d.tipo === tipo);
+        const pendente = pendentes.documentos[tipo];
+        const estado = el('div', { class: 'estadoDoc' });
+        const acoes = el('div', { style: 'display:flex; gap:6px; align-items:center; flex-wrap:wrap;' });
+
+        if (salvo) {
+          estado.classList.add('enviado');
+          estado.append('Enviado · ', el('a', { href: `/uploads/${salvo.arquivo_path}`, target: '_blank', rel: 'noopener', text: 'abrir' }));
+          acoes.append(el('button', { type: 'button', class: 'botaoRemover', 'data-remover': tipo, text: 'Remover' }));
+        } else if (pendente) {
+          estado.textContent = `Selecionado: ${pendente.name} (será enviado ao salvar)`;
+          acoes.append(el('button', { type: 'button', class: 'botaoRemover', 'data-remover': tipo, text: 'Remover' }));
+        } else {
+          estado.textContent = 'Nenhum arquivo.';
+        }
+        const entrada = el('input', { type: 'file', accept: TIPOS_ARQUIVO.join(','), 'data-tipo': tipo, 'aria-label': `Anexar ${nome}` });
+        acoes.append(entrada);
+        lista.append(el('div', { class: 'itemDocumento' },
+          el('div', {}, el('div', { class: 'nomeDoc', text: nome }), estado), acoes));
+      });
+    }
+
+    $('listaDocumentos').addEventListener('change', async (e) => {
+      const tipo = e.target.dataset && e.target.dataset.tipo;
+      if (!tipo) return;
+      const arquivo = e.target.files[0];
+      e.target.value = '';
+      if (!arquivo || !arquivoValido(arquivo, true)) return;
+      try {
+        if (atual) {
+          await enviarArquivo(`/api/colaboradores/${atual.id}/documentos/${tipo}`, 'arquivo', arquivo);
+          atual = await chamarApi(`/api/colaboradores/${atual.id}`);
+        } else {
+          pendentes.documentos[tipo] = arquivo;
+        }
+        renderizarDocumentos();
+      } catch (erro) { mostrarErro(erro.message); }
+    });
+
+    $('listaDocumentos').addEventListener('click', async (e) => {
+      const tipo = e.target.dataset && e.target.dataset.remover;
+      if (!tipo) return;
+      try {
+        if (atual) {
+          await chamarApi(`/api/colaboradores/${atual.id}/documentos/${tipo}`, { method: 'DELETE' });
+          atual = await chamarApi(`/api/colaboradores/${atual.id}`);
+        } else {
+          delete pendentes.documentos[tipo];
+        }
+        renderizarDocumentos();
+      } catch (erro) { mostrarErro(erro.message); }
+    });
+
+    // Depois de criar o cadastro, envia o que foi escolhido antes. Devolve as falhas.
+    async function enviarPendentes(id) {
+      const falhas = [];
+      if (pendentes.foto) {
+        try { await enviarArquivo(`/api/colaboradores/${id}/foto`, 'foto', pendentes.foto); }
+        catch (erro) { falhas.push(`Foto: ${erro.message}`); }
+      }
+      for (const [tipo, arquivo] of Object.entries(pendentes.documentos)) {
+        try { await enviarArquivo(`/api/colaboradores/${id}/documentos/${tipo}`, 'arquivo', arquivo); }
+        catch (erro) { falhas.push(`${tiposDocumento[tipo]}: ${erro.message}`); }
+      }
+      return falhas;
+    }
+
+    // ---------- Disponibilidade ----------
+    function criarLinhaDisponibilidade(dados = {}) {
+      const dia = el('select', { class: 'disp-dia', 'aria-label': 'Dia da semana' });
+      DIAS.forEach((nome, i) => dia.append(el('option', { value: String(i), text: nome })));
+      dia.value = dados.dia_semana !== undefined ? String(dados.dia_semana) : '6';
+      const inicio = el('input', { type: 'time', class: 'disp-inicio', value: dados.hora_inicio || '', 'aria-label': 'Início' });
+      const fim = el('input', { type: 'time', class: 'disp-fim', value: dados.hora_fim || '', 'aria-label': 'Término' });
+      const remover = el('button', { type: 'button', class: 'botaoRemover', text: 'Remover' });
+      const linha = el('div', { class: 'linhaDisp' }, dia, inicio, el('span', { text: '~' }), fim, remover);
+      remover.addEventListener('click', () => linha.remove());
+      $('listaDisponibilidades').append(linha);
+    }
+    $('botaoAddDisponibilidade').addEventListener('click', () => criarLinhaDisponibilidade());
+
+    function coletarDisponibilidades() {
+      return Array.from($('listaDisponibilidades').children).map((l) => ({
+        dia_semana: Number(l.querySelector('.disp-dia').value),
+        hora_inicio: l.querySelector('.disp-inicio').value,
+        hora_fim: l.querySelector('.disp-fim').value
+      }));
+    }
+
+    // ---------- Formulário ----------
+    function limparFormulario() {
+      atual = null;
+      limparPendentes();
+      $('colaboradorId').value = '';
+      $('tituloForm').textContent = 'Novo colaborador';
+      $('botaoImprimirFicha').style.display = 'none';
+      camposTexto.forEach((c) => { $(c).value = ''; });
+      $('status').value = 'ativo';
+      document.querySelectorAll('.chk-modalidade').forEach((c) => { c.checked = false; });
+      $('listaDisponibilidades').replaceChildren();
+      renderizarFoto(null);
+      renderizarDocumentos();
+      $('painelForm').scrollTop = 0;
+    }
+    $('botaoNovo').addEventListener('click', limparFormulario);
+
+    // Abre a ficha para impressão em outra aba (mostra o que está salvo, não o que está sendo digitado).
+    $('botaoImprimirFicha').addEventListener('click', () => {
+      if ($('colaboradorId').value) window.open(`/imprimir.html?tipo=colaborador&id=${$('colaboradorId').value}`, '_blank');
+    });
+
+    async function abrirColaborador(id) {
+      try {
+        const v = await chamarApi(`/api/colaboradores/${id}`);
+        limparPendentes();
+        atual = v;
+        $('colaboradorId').value = v.id;
+        $('tituloForm').textContent = `Editando: ${v.nome}`;
+        $('botaoImprimirFicha').style.display = 'inline-block';
+        camposTexto.forEach((c) => { $(c).value = v[c] || ''; });
+        $('status').value = v.status || 'ativo';
+        document.querySelectorAll('.chk-modalidade').forEach((c) => {
+          c.checked = v.modalidade_ids.includes(Number(c.value));
+        });
+        $('listaDisponibilidades').replaceChildren();
+        v.disponibilidades.forEach((d) => criarLinhaDisponibilidade(d));
+        renderizarFoto(v.foto_path ? `/uploads/${v.foto_path}` : null);
+        renderizarDocumentos();
+        $('painelForm').scrollTop = 0;
+      } catch (erro) { mostrarErro(erro.message); }
+    }
+
+    $('botaoSalvar').addEventListener('click', async () => {
+      const dados = {};
+      camposTexto.forEach((c) => { dados[c] = $(c).value; });
+      dados.modalidade_ids = Array.from(document.querySelectorAll('.chk-modalidade:checked')).map((c) => c.value);
+      dados.disponibilidades = coletarDisponibilidades();
+
+      const faltando = OBRIGATORIOS.filter(([c]) => !String(dados[c]).trim()).map(([, r]) => r);
+      if (faltando.length > 0) {
+        mostrarErro(`Preencha os campos obrigatórios: ${faltando.join(', ')}.`);
+        return;
+      }
+
+      const id = $('colaboradorId').value;
+      try {
+        const resposta = await chamarApi(id ? `/api/colaboradores/${id}` : '/api/colaboradores', {
+          method: id ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dados)
+        });
+        if (!id) {
+          const falhas = await enviarPendentes(resposta.id);
+          carregarLista();
+          if (falhas.length > 0) {
+            await abrirColaborador(resposta.id);
+            mostrarErro(`O colaborador foi cadastrado, mas nem todos os anexos foram enviados: ${falhas.join(' ')}`);
+          } else {
+            limparFormulario();
+            mostrarSucesso('Colaborador cadastrado.');
+          }
+          return;
+        }
+        await abrirColaborador(id);
+        carregarLista();
+        mostrarSucesso('Os dados do colaborador foram atualizados.');
+      } catch (erro) { mostrarErro(erro.message); }
+    });
+
+    // ---------- Lista ----------
+    let rotulosTipo = {};
+    const rotulosStatus = { ativo: 'Ativo', inativo: 'Inativo' };
+    const acoesStatus = {
+      ativo: { proximo: 'inativo', rotulo: 'Marcar inativo' },
+      inativo: { proximo: 'ativo', rotulo: 'Reativar' }
+    };
+
+    function renderizarLinhas(colaboradores) {
+      const corpo = $('corpoTabela');
+      corpo.replaceChildren();
+      $('listaVazia').style.display = colaboradores.length ? 'none' : 'block';
+      colaboradores.forEach((v) => {
+        const acao = acoesStatus[v.status];
+        corpo.append(el('tr', {},
+          el('td', { text: v.nome }),
+          el('td', { text: rotulosTipo[v.tipo] || v.tipo }),
+          el("td", { text: v.telefone, style: "white-space:nowrap;" }),
+          el('td', { text: v.modalidades || '-' }),
+          el('td', {}, el('span', { class: `pill pill-${v.status}`, text: rotulosStatus[v.status] || v.status })),
+          el('td', {}, acao ? el('button', { type: 'button', class: 'botaoStatusRapido', 'data-id': v.id, 'data-status': acao.proximo, text: acao.rotulo }) : null),
+          el('td', {}, el('span', { class: 'ver', 'data-id': v.id, text: 'Ver / editar' }))));
+      });
+    }
+
+    async function carregarLista() {
+      const parametros = new URLSearchParams();
+      if ($('busca').value.trim()) parametros.set('busca', $('busca').value.trim());
+      if ($('filtroStatus').value) parametros.set('status', $('filtroStatus').value);
+      if ($('filtroModalidade').value) parametros.set('modalidade', $('filtroModalidade').value);
+      if ($('filtroTipo').value) parametros.set('tipo', $('filtroTipo').value);
+      try {
+        renderizarLinhas(await chamarApi(parametros.toString() ? `/api/colaboradores?${parametros}` : '/api/colaboradores'));
+      } catch (erro) { mostrarErro(`Não foi possível carregar a lista de colaboradores: ${erro.message}`); }
+    }
+
+    $('busca').addEventListener('input', carregarLista);
+    $('filtroStatus').addEventListener('change', carregarLista);
+    $('filtroModalidade').addEventListener('change', carregarLista);
+    $('filtroTipo').addEventListener('change', carregarLista);
+
+    $('corpoTabela').addEventListener('click', async (e) => {
+      const alvo = e.target;
+      if (alvo.classList.contains('ver')) { abrirColaborador(alvo.dataset.id); return; }
+      if (alvo.classList.contains('botaoStatusRapido')) {
+        try {
+          await chamarApi(`/api/colaboradores/${alvo.dataset.id}/status`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: alvo.dataset.status })
+          });
+          carregarLista();
+        } catch (erro) { mostrarErro(erro.message); }
+      }
+    });
+
+    // ---------- Início ----------
+    async function iniciar() {
+      try {
+        const opcoes = await chamarApi('/api/colaboradores/opcoes');
+        tiposDocumento = opcoes.tipos_documento;
+        rotulosTipo = opcoes.tipos;
+        Object.entries(opcoes.tipos).forEach(([chave, nome]) => {
+          $('tipo').append(el('option', { value: chave, text: nome }));
+          $('filtroTipo').append(el('option', { value: chave, text: nome }));
+        });
+        opcoes.estados_civis.forEach((e) => $('estado_civil').append(el('option', { value: e, text: e })));
+
+        const modalidades = await chamarApi('/api/modalidades');
+        modalidades.forEach((m) => {
+          $('grupoModalidades').append(el('label', { class: 'checkitem' },
+            el('input', { type: 'checkbox', class: 'chk-modalidade', value: String(m.id) }), m.nome));
+          $('filtroModalidade').append(el('option', { value: String(m.id), text: m.nome }));
+        });
+      } catch (erro) { mostrarErro(erro.message); }
+      renderizarDocumentos();
+      carregarLista();
+      iniciarLayout();
+    }
+    iniciar();
+  </script>
+</body>
+</html>

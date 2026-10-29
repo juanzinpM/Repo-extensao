@@ -26,6 +26,25 @@ function exigirResponsavelSeMenor(corpo) {
   }
 }
 
+// Dados principais obrigatórios. Telefone fixo e complemento são opcionais;
+// escola, nível e período escolar só são exigidos de menores de 18 anos.
+const OBRIGATORIOS = [
+  ['nome', 'Nome completo'], ['cpf', 'CPF'], ['data_nascimento', 'Data de nascimento'],
+  ['nome_pai', 'Nome do pai'], ['nome_mae', 'Nome da mãe'], ['endereco', 'Endereço'],
+  ['bairro', 'Bairro'], ['celular', 'Celular'], ['email', 'E-mail']
+];
+const OBRIGATORIOS_ESCOLA = [['escola', 'Escola'], ['nivel_ensino', 'Nível de ensino'], ['periodo_escola', 'Período escolar']];
+
+function exigirDadosPrincipais(corpo) {
+  const idade = matriculasModel.calcularIdade(corpo.data_nascimento);
+  const maiorDeIdade = idade !== null && idade >= 18;
+  const lista = OBRIGATORIOS.concat(maiorDeIdade ? [] : OBRIGATORIOS_ESCOLA);
+  const faltando = lista.filter(([campo]) => !String(corpo[campo] ?? '').trim()).map(([, rotulo]) => rotulo);
+  if (faltando.length > 0) {
+    throw new ErroApp(`Preencha os campos obrigatórios: ${faltando.join(', ')}.`);
+  }
+}
+
 function exigirAlunoExistente(req, res, next) {
   if (!alunosModel.existe(req.params.id)) {
     throw new ErroApp('Aluno não encontrado.', 404);
@@ -48,7 +67,6 @@ router.get('/pendentes-rematricula', (req, res) => {
 const COLUNAS_EXPORTACAO = [
   { rotulo: 'Nome', chave: 'nome', largura: 28 },
   { rotulo: 'CPF', chave: 'cpf', largura: 16 },
-  { rotulo: 'RG', chave: 'rg', largura: 14 },
   { rotulo: 'Data de nascimento', chave: 'data_nascimento', largura: 16 },
   { rotulo: 'Idade', chave: 'idade', largura: 8 },
   { rotulo: 'Nome do pai', chave: 'nome_pai', largura: 26 },
@@ -60,7 +78,7 @@ const COLUNAS_EXPORTACAO = [
   { rotulo: 'Celular', chave: 'celular', largura: 16 },
   { rotulo: 'E-mail', chave: 'email', largura: 26 },
   { rotulo: 'Escola', chave: 'escola', largura: 24 },
-  { rotulo: 'Série', chave: 'serie_escola', largura: 12 },
+  { rotulo: 'Nível de ensino', chave: 'nivel_ensino', largura: 22 },
   { rotulo: 'Período escolar', chave: 'periodo_escola', largura: 16 },
   { rotulo: 'Possui convênio', chave: 'possui_convenio', largura: 14 },
   { rotulo: 'Qual convênio', chave: 'convenio_qual', largura: 20 },
@@ -121,18 +139,14 @@ router.get('/:id', (req, res) => {
 });
 
 router.post('/', (req, res) => {
-  if (!req.body.nome || !req.body.nome.trim()) {
-    throw new ErroApp('O nome do aluno é obrigatório.');
-  }
+  exigirDadosPrincipais(req.body);
   exigirResponsavelSeMenor(req.body);
   const id = alunosModel.criar(req.body);
   res.json({ id });
 });
 
 router.put('/:id', (req, res) => {
-  if (!req.body.nome || !req.body.nome.trim()) {
-    throw new ErroApp('O nome do aluno é obrigatório.');
-  }
+  exigirDadosPrincipais(req.body);
   exigirResponsavelSeMenor(req.body);
   if (!alunosModel.existe(req.params.id)) {
     throw new ErroApp('Aluno não encontrado.', 404);
@@ -187,6 +201,17 @@ router.post('/:id/documentos', exigirAlunoExistente, uploadDocumento, (req, res)
   }
   const id = documentosModel.criar(req.params.id, req.body.tipo, `documentos/${req.file.filename}`);
   res.json({ id });
+});
+
+// Regras de convivência: slot próprio (um arquivo por ano letivo).
+router.post('/:id/regras-convivencia', exigirAlunoExistente, uploadDocumento, (req, res) => {
+  if (!req.file) {
+    throw new ErroApp('Nenhum arquivo enviado.');
+  }
+  documentosModel.substituirPorTipo(
+    req.params.id, documentosModel.TIPO_REGRAS_CONVIVENCIA, `documentos/${req.file.filename}`
+  );
+  res.json({ ok: true });
 });
 
 router.delete('/:id/documentos/:documentoId', (req, res) => {

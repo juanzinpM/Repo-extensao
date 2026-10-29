@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS alunos (
   celular TEXT,
   email TEXT,
   escola TEXT,
-  serie_escola TEXT,
+  nivel_ensino TEXT,
   periodo_escola TEXT,
   possui_convenio INTEGER DEFAULT 0,
   convenio_qual TEXT,
@@ -195,19 +195,53 @@ const doencas = [
 ];
 doencas.forEach((nome) => inserirDoenca.run(nome));
 
+// Migração: "Box" virou "Boxe" e "Break" virou "Breaking". Em bancos já criados,
+// renomeia a modalidade existente (mantendo matrículas e alunos vinculados)
+// ANTES do cadastro dos nomes padrão abaixo — senão ficariam duas versões.
+[['Box', 'Boxe'], ['Break', 'Breaking']].forEach(([antigo, novo]) => {
+  db.prepare(`
+    UPDATE modalidades SET nome = ?
+    WHERE nome = ? AND NOT EXISTS (SELECT 1 FROM modalidades WHERE nome = ?)
+  `).run(novo, antigo, novo);
+});
+
 const inserirModalidade = db.prepare(
   'INSERT OR IGNORE INTO modalidades (nome, publico) VALUES (?, ?)'
 );
 const modalidades = [
-  ['Break', 'infantil'],
+  ['Breaking', 'infantil'],
   ['Balé', 'infantil'],
   ['Música', 'infantil'],
-  ['Box', 'adulto_e_infantil'],
+  ['Boxe', 'adulto_e_infantil'],
   ['Futebol', 'infantil'],
   ['Inglês', 'infantil'],
   ['Reforço escolar', 'infantil']
 ];
 modalidades.forEach(([nome, publico]) => inserirModalidade.run(nome, publico));
+
+// ==========================================================
+// CALENDÁRIO (aulas e eventos, com recorrência opcional)
+// Guarda só o cadastro-base; as ocorrências de cada dia são calculadas
+// na hora da consulta (ver models/calendarioModel.js).
+// ==========================================================
+db.exec(`
+CREATE TABLE IF NOT EXISTS calendario_eventos (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  tipo TEXT NOT NULL CHECK (tipo IN ('aula', 'evento')),
+  titulo TEXT NOT NULL,
+  responsavel TEXT NOT NULL,
+  modalidade_id INTEGER REFERENCES modalidades(id) ON DELETE SET NULL,
+  descricao TEXT,
+  data_inicio TEXT NOT NULL,
+  hora_inicio TEXT NOT NULL,
+  hora_fim TEXT,
+  recorrencia TEXT NOT NULL DEFAULT 'nenhuma' CHECK (recorrencia IN ('nenhuma', 'semanal', 'mensal')),
+  dias_semana TEXT,
+  recorrencia_ate TEXT,
+  criado_em TEXT DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP
+);
+`);
 
 // Garante que o ano letivo atual exista
 const anoAtual = new Date().getFullYear();
@@ -219,6 +253,78 @@ db.prepare('INSERT OR IGNORE INTO anos_letivos (ano, ativo) VALUES (?, 1)').run(
 const colunasAlunos = db.prepare('PRAGMA table_info(alunos)').all().map((c) => c.name);
 if (colunasAlunos.includes('horario_escola') && !colunasAlunos.includes('periodo_escola')) {
   db.exec('ALTER TABLE alunos RENAME COLUMN horario_escola TO periodo_escola');
+}
+// Mesma ideia: "série" (texto livre) virou "nível de ensino" (lista fixa).
+if (colunasAlunos.includes('serie_escola') && !colunasAlunos.includes('nivel_ensino')) {
+  db.exec('ALTER TABLE alunos RENAME COLUMN serie_escola TO nivel_ensino');
+}
+
+// ---------- Colaboradores (antes chamados de "voluntários") ----------
+// Bancos que já tinham as tabelas antigas são renomeados, sem perder dados.
+const tabelasAtuais = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((t) => t.name);
+if (tabelasAtuais.includes('voluntarios') && !tabelasAtuais.includes('colaboradores')) {
+  db.exec(`
+    ALTER TABLE voluntarios RENAME TO colaboradores;
+    ALTER TABLE voluntario_modalidades RENAME TO colaborador_modalidades;
+    ALTER TABLE voluntario_disponibilidades RENAME TO colaborador_disponibilidades;
+    ALTER TABLE voluntario_documentos RENAME TO colaborador_documentos;
+    ALTER TABLE colaborador_modalidades RENAME COLUMN voluntario_id TO colaborador_id;
+    ALTER TABLE colaborador_disponibilidades RENAME COLUMN voluntario_id TO colaborador_id;
+    ALTER TABLE colaborador_documentos RENAME COLUMN voluntario_id TO colaborador_id;
+  `);
+}
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS colaboradores (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  tipo TEXT NOT NULL DEFAULT 'voluntario' CHECK (tipo IN ('voluntario', 'professor', 'estagiario')),
+  nome TEXT NOT NULL,
+  data_nascimento TEXT NOT NULL,
+  estado_civil TEXT NOT NULL,
+  cpf TEXT NOT NULL,
+  telefone TEXT NOT NULL,
+  endereco TEXT NOT NULL,
+  bairro TEXT NOT NULL,
+  cep TEXT NOT NULL,
+  email TEXT NOT NULL,
+  formacao TEXT,
+  chave_pix TEXT,
+  igreja TEXT,
+  foto_path TEXT,
+  status TEXT NOT NULL DEFAULT 'ativo' CHECK (status IN ('ativo', 'inativo')),
+  criado_em TEXT DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS colaborador_modalidades (
+  colaborador_id INTEGER NOT NULL REFERENCES colaboradores(id) ON DELETE CASCADE,
+  modalidade_id INTEGER NOT NULL REFERENCES modalidades(id) ON DELETE CASCADE,
+  PRIMARY KEY (colaborador_id, modalidade_id)
+);
+
+-- Dias e horários em que o colaborador pretende atuar (0 = domingo ... 6 = sábado).
+CREATE TABLE IF NOT EXISTS colaborador_disponibilidades (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  colaborador_id INTEGER NOT NULL REFERENCES colaboradores(id) ON DELETE CASCADE,
+  dia_semana INTEGER NOT NULL CHECK (dia_semana BETWEEN 0 AND 6),
+  hora_inicio TEXT NOT NULL,
+  hora_fim TEXT NOT NULL
+);
+
+-- Um documento de cada tipo por colaborador (enviar de novo substitui o anterior).
+CREATE TABLE IF NOT EXISTS colaborador_documentos (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  colaborador_id INTEGER NOT NULL REFERENCES colaboradores(id) ON DELETE CASCADE,
+  tipo TEXT NOT NULL,
+  arquivo_path TEXT NOT NULL,
+  data_upload TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (colaborador_id, tipo)
+);
+`);
+
+const colunasColaboradores = db.prepare('PRAGMA table_info(colaboradores)').all().map((c) => c.name);
+if (!colunasColaboradores.includes('tipo')) {
+  db.exec("ALTER TABLE colaboradores ADD COLUMN tipo TEXT NOT NULL DEFAULT 'voluntario' CHECK (tipo IN ('voluntario', 'professor', 'estagiario'))");
 }
 
 console.log(`Banco de dados pronto (${ARQUIVO_BANCO}). Ambiente: ${AMBIENTE.toUpperCase()}. Ano letivo ${anoAtual} garantido.`);

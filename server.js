@@ -43,6 +43,8 @@ app.use('/uploads', express.static(path.join(__dirname, PASTA_UPLOADS)));
 app.use('/api', require('./routes/catalogos'));
 app.use('/api/alunos', require('./routes/alunos'));
 app.use('/api/modalidades', require('./routes/modalidades'));
+app.use('/api/calendario', require('./routes/calendario'));
+app.use('/api/colaboradores', require('./routes/colaboradores'));
 
 // Precisa ser o ÚLTIMO app.use() — captura qualquer erro lançado nas rotas acima.
 app.use(require('./middlewares/tratarErros'));

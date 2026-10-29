@@ -12,9 +12,9 @@ const ErroApp = require('../utils/ErroApp');
 const STATUS_VALIDOS = ['ativo', 'inativo', 'lista_espera'];
 
 const camposAluno = [
-  'nome', 'rg', 'cpf', 'data_nascimento', 'nome_pai', 'nome_mae',
+  'nome', 'cpf', 'data_nascimento', 'nome_pai', 'nome_mae',
   'endereco', 'bairro', 'complemento', 'telefone_fixo', 'celular', 'email',
-  'escola', 'serie_escola', 'periodo_escola', 'possui_convenio', 'convenio_qual'
+  'escola', 'nivel_ensino', 'periodo_escola', 'possui_convenio', 'convenio_qual'
 ];
 
 const camposSaude = [

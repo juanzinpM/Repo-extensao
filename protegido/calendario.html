@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calendário — Instituto Missão Art</title>
+  <link rel="stylesheet" href="/tema.css">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+      background: #FAF7F4;
+      margin: 0;
+      color: #2A2224;
+    }
+    :root {
+      --aula: #DB5A61;
+      --aula-fundo: #FDEDEE;
+      --evento: #2F7F86;
+      --evento-fundo: #E5F2F3;
+    }
+    button { font-family: inherit; }
+    .area-pagina { padding: 24px 32px; }
+
+    /* ---------- Cabeçalho do calendário ---------- */
+    .cabecalho {
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 18px;
+    }
+    .cabecalho h1 {
+      font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.3px; min-width: 190px;
+    }
+    .cabecalho h1 span { color: var(--coral); font-weight: 500; }
+    .navegacao { display: flex; align-items: center; gap: 6px; }
+    .botaoSeta {
+      width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--borda);
+      background: #fff; color: var(--carvao); font-size: 16px; cursor: pointer; padding: 0; line-height: 1;
+    }
+    .botaoSeta:hover { background: var(--coral-claro); border-color: var(--coral); color: var(--coral); }
+    .botaoHoje {
+      height: 34px; padding: 0 14px; border-radius: 17px; border: 1px solid var(--borda);
+      background: #fff; color: var(--carvao); font-size: 13px; cursor: pointer;
+    }
+    .botaoHoje:hover { background: var(--coral-claro); border-color: var(--coral); color: var(--coral); }
+    .legenda { display: flex; gap: 14px; margin-left: auto; font-size: 12px; color: var(--cinza-texto); }
+    .legenda span { display: inline-flex; align-items: center; gap: 6px; }
+    .bolinha { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    .bolinha.aula { background: var(--aula); }
+    .bolinha.evento { background: var(--evento); }
+    .botaoNovo {
+      height: 36px; padding: 0 18px; border-radius: 18px; border: none; background: var(--coral);
+      color: #fff; font-size: 13px; font-weight: 600; cursor: pointer;
+      box-shadow: 0 2px 8px rgba(219, 90, 97, 0.3);
+    }
+    .botaoNovo:hover { background: #C84C53; }
+
+    /* ---------- Layout: calendário + painel lateral ---------- */
+    .corpo { display: flex; gap: 22px; align-items: flex-start; }
+    .cartaoCalendario {
+      flex: 1; min-width: 0; background: #fff; border: 0.5px solid var(--borda);
+      border-radius: 14px; overflow: hidden; box-shadow: 0 2px 14px rgba(42, 34, 36, 0.05);
+    }
+    .painelLateral {
+      width: 290px; flex-shrink: 0; background: #fff; border: 0.5px solid var(--borda);
+      border-radius: 14px; padding: 18px; box-shadow: 0 2px 14px rgba(42, 34, 36, 0.05);
+    }
+    .painelLateral h2 { font-size: 14px; margin: 0 0 12px; }
+    .painelLateral .vazio { font-size: 12px; color: var(--cinza-texto); line-height: 1.5; }
+
+    /* ---------- Grade do mês ---------- */
+    .diasSemana { display: grid; grid-template-columns: repeat(7, 1fr); background: #FDFBFA; border-bottom: 0.5px solid var(--borda); }
+    .diasSemana div {
+      padding: 10px 0; text-align: center; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.6px; color: #9C918C;
+    }
+    .grade { display: grid; grid-template-columns: repeat(7, 1fr); }
+    .celula {
+      min-height: 112px; padding: 6px 6px 8px; border-right: 0.5px solid #F0EAE5; border-bottom: 0.5px solid #F0EAE5;
+      cursor: pointer; min-width: 0; transition: background 0.12s;
+    }
+    .celula:nth-child(7n) { border-right: none; }
+    .celula:hover { background: #FDF9F6; }
+    .celula.fimDeSemana { background: #FCFAF8; }
+    .celula.fimDeSemana:hover { background: #FDF9F6; }
+    .celula.outroMes .numero { color: #C4BAB4; }
+    .celula.outroMes { background: #FBF9F7; }
+    .numero {
+      width: 26px; height: 26px; border-radius: 50%; border: none; background: none;
+      font-size: 12px; font-weight: 600; color: var(--carvao); cursor: pointer; padding: 0;
+      display: flex; align-items: center; justify-content: center; margin-bottom: 3px;
+    }
+    .celula.hoje { background: #FFF8F8; }
+    .celula.hoje .numero { background: var(--coral); color: #fff; }
+    .chip {
+      display: block; width: 100%; text-align: left; margin-bottom: 3px; padding: 3px 6px;
+      border: none; border-left: 3px solid; border-radius: 5px; font-size: 11.5px; line-height: 1.3;
+      cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--carvao);
+    }
+    .chip b { display: block; font-weight: 700; font-size: 10.5px; }
+    .chip.aula { background: var(--aula-fundo); border-left-color: var(--aula); }
+    .chip.evento { background: var(--evento-fundo); border-left-color: var(--evento); }
+    .chip:hover { filter: brightness(0.96); }
+    .mais {
+      border: none; background: none; color: var(--cinza-texto); font-size: 11px; font-weight: 600;
+      cursor: pointer; padding: 2px 4px;
+    }
+    .mais:hover { color: var(--coral); }
+
+    /* ---------- Lista "Próximos" ---------- */
+    .proximo {
+      display: flex; gap: 12px; align-items: center; width: 100%; text-align: left; background: none;
+      border: none; padding: 8px 6px; border-radius: 10px; cursor: pointer;
+    }
+    .proximo:hover { background: var(--fundo); }
+    .selo {
+      width: 44px; flex-shrink: 0; border-radius: 10px; padding: 5px 0; text-align: center; line-height: 1.1;
+    }
+    .selo.aula { background: var(--aula-fundo); color: var(--aula); }
+    .selo.evento { background: var(--evento-fundo); color: var(--evento); }
+    .selo .dia { font-size: 17px; font-weight: 700; display: block; }
+    .selo .mes { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .proximo .info { min-width: 0; }
+    .proximo .titulo { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .proximo .detalhe { font-size: 11.5px; color: var(--cinza-texto); margin-top: 2px; }
+
+    /* ---------- Janelas (modais) ---------- */
+    .fundoModal {
+      position: fixed; inset: 0; background: rgba(42, 37, 35, 0.45); display: flex;
+      align-items: center; justify-content: center; z-index: 900; padding: 16px;
+    }
+    .caixaModal {
+      background: #fff; border-radius: 14px; width: 100%; max-height: 92vh; overflow-y: auto;
+      box-shadow: 0 8px 36px rgba(0, 0, 0, 0.22);
+    }
+    .faixaModal { height: 6px; }
+    .faixaModal.aula { background: var(--aula); }
+    .faixaModal.evento { background: var(--evento); }
+    .conteudoModal { padding: 22px 24px 24px; }
+    .conteudoModal h3 { margin: 0 0 4px; font-size: 18px; line-height: 1.3; }
+    .etiqueta {
+      display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px;
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;
+    }
+    .etiqueta.aula { background: var(--aula-fundo); color: var(--aula); }
+    .etiqueta.evento { background: var(--evento-fundo); color: var(--evento); }
+    .linhaInfo { display: flex; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid #F3EEEA; font-size: 13px; }
+    .linhaInfo:last-of-type { border-bottom: none; }
+    .linhaInfo .rotulo { width: 100px; flex-shrink: 0; color: #9C918C; font-size: 12px; font-weight: 600; padding-top: 1px; }
+    .acoes {
+      display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; flex-wrap: wrap;
+      position: sticky; bottom: -24px; background: #fff; padding: 12px 0 0;
+    }
+    .btn { padding: 9px 18px; border-radius: 8px; border: none; font-size: 13px; cursor: pointer; font-weight: 500; }
+    .btn.primario { background: var(--coral); color: #fff; }
+    .btn.primario:hover { background: #C84C53; }
+    .btn.neutro { background: #F1EFE8; color: var(--carvao); }
+    .btn.perigo { background: #fff; color: #A32D2D; border: 1px solid #E8B9B9; }
+    .btn.perigoForte { background: #A32D2D; color: #fff; }
+    .itemDia {
+      display: flex; gap: 10px; align-items: center; width: 100%; text-align: left; background: none;
+      border: none; border-bottom: 0.5px solid #F3EEEA; padding: 10px 4px; cursor: pointer; font-size: 13px;
+    }
+    .itemDia:hover { background: var(--fundo); }
+    .itemDia .hora { width: 104px; font-weight: 700; flex-shrink: 0; }
+
+    /* ---------- Formulário ---------- */
+    .conteudoModal label {
+      display: block; font-size: 12px; color: var(--cinza-texto); margin: 14px 0 5px; font-weight: 600;
+    }
+    .conteudoModal input[type=text], .conteudoModal input[type=date], .conteudoModal input[type=time],
+    .conteudoModal select, .conteudoModal textarea {
+      width: 100%; padding: 8px 10px; border: 1px solid #D8D1CB; border-radius: 7px;
+      font-size: 13px; font-family: inherit; background: #fff;
+    }
+    .conteudoModal input:focus, .conteudoModal select:focus, .conteudoModal textarea:focus {
+      outline: 2px solid var(--coral-claro); border-color: var(--coral);
+    }
+    .conteudoModal textarea { resize: vertical; min-height: 60px; }
+    .duas { display: flex; gap: 12px; }
+    .duas > div { flex: 1; min-width: 0; }
+    .segmentado { display: flex; background: #F5F1EE; border-radius: 10px; padding: 3px; gap: 3px; }
+    .segmentado button {
+      flex: 1; border: none; background: none; padding: 8px; border-radius: 8px; font-size: 13px;
+      font-weight: 600; color: var(--cinza-texto); cursor: pointer;
+    }
+    .segmentado button.ativo.aula { background: var(--aula); color: #fff; }
+    .segmentado button.ativo.evento { background: var(--evento); color: #fff; }
+    .pilulas { display: flex; gap: 6px; flex-wrap: wrap; }
+    .pilulas label {
+      margin: 0; width: 44px; height: 36px; border: 1px solid #D8D1CB; border-radius: 18px; display: flex;
+      align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--carvao);
+      cursor: pointer; user-select: none;
+    }
+    .pilulas input { display: none; }
+    .pilulas label.marcada { background: var(--coral); border-color: var(--coral); color: #fff; }
+    .dica { font-size: 12px; color: var(--cinza-texto); margin-top: 6px; line-height: 1.4; }
+    .aviso {
+      background: #FAEEDA; color: #6B4A0C; border: 1px solid #F0D9AE; border-radius: 8px;
+      padding: 8px 12px; font-size: 12px; margin-top: 14px;
+    }
+
+    @media (max-width: 1000px) {
+      .corpo { flex-direction: column; }
+      .painelLateral { width: 100%; }
+      .legenda { margin-left: 0; }
+    }
+    @media (max-width: 640px) {
+      .area-pagina { padding: 16px 12px; }
+      .celula { min-height: 78px; padding: 4px; }
+      .chip { font-size: 10.5px; padding: 2px 4px; }
+      .chip b { display: none; }
+      .duas { flex-direction: column; gap: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="areaLogo">
+        <img src="/img/logo.png" alt="Instituto Missão Art">
+      </div>
+      <nav>
+        <a href="/alunos.html">Alunos</a>
+        <a href="/colaboradores.html">Colaboradores</a>
+        <a href="/calendario.html" class="ativo">Calendário</a>
+      </nav>
+    </aside>
+
+    <div class="areaPrincipal">
+      <div id="avisoAmbiente">
+        Ambiente de TESTE — estes dados não são reais e podem ser apagados a qualquer momento.
+      </div>
+      <div class="topbar">
+        <span class="avatar" id="avatarInicial"></span>
+        <span class="nomeUsuario" id="nomeUsuario"></span>
+        <button type="button" class="botaoSair" id="botaoSair">Sair</button>
+      </div>
+
+      <div class="area-pagina">
+        <div class="cabecalho">
+          <h1 id="tituloMes"></h1>
+          <div class="navegacao">
+            <button type="button" class="botaoSeta" id="mesAnterior" aria-label="Mês anterior">&#8249;</button>
+            <button type="button" class="botaoSeta" id="mesSeguinte" aria-label="Próximo mês">&#8250;</button>
+            <button type="button" class="botaoHoje" id="botaoHoje">Hoje</button>
+          </div>
+          <div class="legenda">
+            <span><i class="bolinha aula"></i> Aula</span>
+            <span><i class="bolinha evento"></i> Evento</span>
+          </div>
+          <button type="button" class="botaoNovo" id="botaoNovo">+ Novo</button>
+        </div>
+
+        <div class="corpo">
+          <div class="cartaoCalendario">
+            <div class="diasSemana" id="diasSemana"></div>
+            <div class="grade" id="grade"></div>
+          </div>
+          <aside class="painelLateral">
+            <h2>Próximos 30 dias</h2>
+            <div id="listaProximos"></div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/erros.js"></script>
+  <script src="/layout.js"></script>
+  <script>
+    const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    const MESES_CURTOS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    const DIAS_CURTOS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    const DIAS_LONGOS = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
+    const MAXIMO_CHIPS_POR_DIA = 3;
+
+    const hojeData = new Date();
+    const estado = { ano: hojeData.getFullYear(), mes: hojeData.getMonth(), ocorrencias: [], modalidades: [] };
+
+    // ---------- Utilitários ----------
+
+    function el(tag, atributos = {}, ...filhos) {
+      const no = document.createElement(tag);
+      Object.entries(atributos).forEach(([chave, valor]) => {
+        if (chave === 'class') no.className = valor;
+        else if (chave === 'text') no.textContent = valor;
+        else if (chave.startsWith('data-')) no.setAttribute(chave, valor);
+        else no[chave] = valor;
+      });
+      filhos.flat().forEach((f) => { if (f) no.append(f); });
+      return no;
+    }
+
+    const pad = (n) => String(n).padStart(2, '0');
+    const dataParaTexto = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    function textoParaData(t) {
+      const [a, m, d] = t.split('-').map(Number);
+      return new Date(a, m - 1, d);
+    }
+    const hojeTexto = () => dataParaTexto(new Date());
+    function somarDias(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+    function dataBR(t) { const [a, m, d] = t.split('-'); return `${d}/${m}/${a}`; }
+    function dataPorExtenso(t) {
+      const d = textoParaData(t);
+      return `${DIAS_LONGOS[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()].toLowerCase()} de ${d.getFullYear()}`;
+    }
+    function textoHorario(o) {
+      return faixaHora(o, true);
+    }
+    // "10:00 ~ 11:00"; sem horário de término, mostra só o início.
+    function faixaHora(o, completo) {
+      if (o.hora_fim) return `${o.hora_inicio} ~ ${o.hora_fim}`;
+      return completo ? `a partir das ${o.hora_inicio}` : o.hora_inicio;
+    }
+    function resumoRecorrencia(e) {
+      if (e.recorrencia === 'semanal') {
+        const dias = (e.dias_semana || []).map((d) => DIAS_CURTOS[d].toLowerCase()).join(', ');
+        return `Toda semana: ${dias}${e.recorrencia_ate ? ` · até ${dataBR(e.recorrencia_ate)}` : ''}`;
+      }
+      if (e.recorrencia === 'mensal') {
+        return `Todo mês, no dia ${Number(e.data_inicio.slice(8, 10))}${e.recorrencia_ate ? ` · até ${dataBR(e.recorrencia_ate)}` : ''}`;
+      }
+      return 'Não se repete';
+    }
+
+    // ---------- Janelas ----------
+
+    function abrirModal({ largura = 460, fecharAoClicarFora = true, tipo = null } = {}) {
+      const caixa = el('div', { class: 'caixaModal', role: 'dialog' });
+      caixa.style.maxWidth = `${largura}px`;
+      if (tipo) caixa.append(el('div', { class: `faixaModal ${tipo}` }));
+      const conteudo = el('div', { class: 'conteudoModal' });
+      caixa.append(conteudo);
+      const fundo = el('div', { class: 'fundoModal' }, caixa);
+
+      function aoTeclar(e) { if (e.key === 'Escape') fechar(); }
+      function fechar() {
+        document.removeEventListener('keydown', aoTeclar);
+        fundo.remove();
+      }
+      fundo.addEventListener('mousedown', (e) => { if (fecharAoClicarFora && e.target === fundo) fechar(); });
+      document.addEventListener('keydown', aoTeclar);
+      document.body.append(fundo);
+      return { conteudo, fechar };
+    }
+
+    // ---------- Cabeçalho e grade ----------
+
+    function montarDiasSemana() {
+      const caixa = document.getElementById('diasSemana');
+      DIAS_CURTOS.forEach((d) => caixa.append(el('div', { text: d })));
+    }
+
+    function intervaloDaGrade() {
+      const primeiroDoMes = new Date(estado.ano, estado.mes, 1);
+      const inicio = somarDias(primeiroDoMes, -primeiroDoMes.getDay());
+      return { inicio, fim: somarDias(inicio, 41) }; // 6 semanas
+    }
+
+    function ocorrenciasDoDia(textoData) {
+      return estado.ocorrencias.filter((o) => o.data === textoData);
+    }
+
+    function renderizarGrade() {
+      document.getElementById('tituloMes').replaceChildren(
+        `${MESES[estado.mes]} `, el('span', { text: String(estado.ano) })
+      );
+
+      const grade = document.getElementById('grade');
+      grade.replaceChildren();
+      const { inicio } = intervaloDaGrade();
+      const hoje = hojeTexto();
+
+      for (let i = 0; i < 42; i++) {
+        const dia = somarDias(inicio, i);
+        const texto = dataParaTexto(dia);
+        const classes = ['celula'];
+        if (dia.getMonth() !== estado.mes) classes.push('outroMes');
+        if (dia.getDay() === 0 || dia.getDay() === 6) classes.push('fimDeSemana');
+        if (texto === hoje) classes.push('hoje');
+
+        const celula = el('div', { class: classes.join(' '), 'data-data': texto });
+        celula.append(el('button', { class: 'numero', type: 'button', text: String(dia.getDate()), 'data-data': texto }));
+
+        const doDia = ocorrenciasDoDia(texto);
+        doDia.slice(0, MAXIMO_CHIPS_POR_DIA).forEach((o) => {
+          const chip = el('button', {
+            class: `chip ${o.tipo}`, type: 'button', 'data-evento': o.evento_id, 'data-data': texto,
+            title: `${o.titulo} — ${textoHorario(o)}`
+          }, el('b', { text: faixaHora(o) }), o.titulo);
+          celula.append(chip);
+        });
+        if (doDia.length > MAXIMO_CHIPS_POR_DIA) {
+          celula.append(el('button', {
+            class: 'mais', type: 'button', 'data-data': texto,
+            text: `+${doDia.length - MAXIMO_CHIPS_POR_DIA} mais`
+          }));
+        }
+        grade.append(celula);
+      }
+    }
+
+    async function carregarMes() {
+      const { inicio, fim } = intervaloDaGrade();
+      try {
+        estado.ocorrencias = await chamarApi(
+          `/api/calendario?inicio=${dataParaTexto(inicio)}&fim=${dataParaTexto(fim)}`
+        );
+      } catch (erro) {
+        estado.ocorrencias = [];
+        mostrarErro(`Não foi possível carregar o calendário: ${erro.message}`);
+      }
+      renderizarGrade();
+    }
+
+    async function carregarProximos() {
+      const lista = document.getElementById('listaProximos');
+      const hoje = new Date();
+      try {
+        const ocorrencias = await chamarApi(
+          `/api/calendario?inicio=${dataParaTexto(hoje)}&fim=${dataParaTexto(somarDias(hoje, 30))}`
+        );
+        // Hoje só entra se ainda não passou do horário de início.
+        const agora = `${pad(hoje.getHours())}:${pad(hoje.getMinutes())}`;
+        const futuras = ocorrencias.filter((o) => o.data > hojeTexto() || o.hora_inicio >= agora).slice(0, 7);
+        lista.replaceChildren();
+        if (futuras.length === 0) {
+          lista.append(el('div', {
+            class: 'vazio',
+            text: 'Nada marcado para os próximos 30 dias. Use o botão "+ Novo" para cadastrar uma aula ou evento.'
+          }));
+          return;
+        }
+        futuras.forEach((o) => {
+          const d = textoParaData(o.data);
+          lista.append(el('button', { class: 'proximo', type: 'button', 'data-evento': o.evento_id, 'data-data': o.data },
+            el('div', { class: `selo ${o.tipo}` },
+              el('span', { class: 'dia', text: String(d.getDate()) }),
+              el('span', { class: 'mes', text: MESES_CURTOS[d.getMonth()] })),
+            el('div', { class: 'info' },
+              el('div', { class: 'titulo', text: o.titulo }),
+              el('div', { class: 'detalhe', text: `${DIAS_CURTOS[d.getDay()]} · ${faixaHora(o)} · ${o.responsavel}` }))
+          ));
+        });
+      } catch (erro) {
+        lista.replaceChildren(el('div', { class: 'vazio', text: 'Não foi possível carregar os próximos eventos.' }));
+      }
+    }
+
+    async function atualizarTudo() {
+      await Promise.all([carregarMes(), carregarProximos()]);
+    }
+
+    // ---------- Janela do dia ----------
+
+    function abrirDia(textoData) {
+      const { conteudo, fechar } = abrirModal({ largura: 440 });
+      conteudo.append(el('h3', { text: dataPorExtenso(textoData) }));
+      const doDia = ocorrenciasDoDia(textoData);
+      if (doDia.length === 0) {
+        conteudo.append(el('div', { class: 'dica', text: 'Nada marcado para este dia.', style: 'margin:12px 0;' }));
+      } else {
+        const lista = el('div', { style: 'margin-top:12px;' });
+        doDia.forEach((o) => {
+          const item = el('button', { class: 'itemDia', type: 'button' },
+            el('i', { class: `bolinha ${o.tipo}` }),
+            el('span', { class: 'hora', text: faixaHora(o) }),
+            el('span', { text: o.titulo }));
+          item.addEventListener('click', () => { fechar(); abrirDetalhe(o.evento_id, o.data); });
+          lista.append(item);
+        });
+        conteudo.append(lista);
+      }
+      const novo = el('button', { class: 'btn primario', type: 'button', text: '+ Novo neste dia' });
+      const sair = el('button', { class: 'btn neutro', type: 'button', text: 'Fechar' });
+      novo.addEventListener('click', () => { fechar(); abrirFormulario({ data: textoData }); });
+      sair.addEventListener('click', fechar);
+      conteudo.append(el('div', { class: 'acoes' }, sair, novo));
+    }
+
+    // ---------- Janela de detalhe ----------
+
+    async function abrirDetalhe(eventoId, textoData) {
+      let evento;
+      try {
+        evento = await chamarApi(`/api/calendario/${eventoId}`);
+      } catch (erro) {
+        mostrarErro(`Não foi possível abrir: ${erro.message}`);
+        atualizarTudo();
+        return;
+      }
+      const { conteudo, fechar } = abrirModal({ largura: 460, tipo: evento.tipo });
+
+      function linha(rotulo, valor) {
+        return el('div', { class: 'linhaInfo' }, el('div', { class: 'rotulo', text: rotulo }), el('div', { text: valor }));
+      }
+
+      function mostrarDetalhes() {
+        conteudo.replaceChildren(
+          el('span', { class: `etiqueta ${evento.tipo}`, text: evento.tipo === 'aula' ? 'Aula' : 'Evento' }),
+          el('h3', { text: evento.titulo }),
+          el('div', { style: 'margin-top:10px;' },
+            linha('Data', dataPorExtenso(textoData || evento.data_inicio)),
+            linha('Horário', textoHorario(evento)),
+            linha('Responsável', evento.responsavel),
+            evento.modalidade_nome ? linha('Modalidade', evento.modalidade_nome) : null,
+            linha('Repetição', resumoRecorrencia(evento)),
+            evento.descricao ? linha('Descrição', evento.descricao) : null)
+        );
+        const editar = el('button', { class: 'btn primario', type: 'button', text: 'Editar' });
+        const excluir = el('button', { class: 'btn perigo', type: 'button', text: 'Excluir' });
+        const sair = el('button', { class: 'btn neutro', type: 'button', text: 'Fechar' });
+        editar.addEventListener('click', () => { fechar(); abrirFormulario({ evento }); });
+        excluir.addEventListener('click', mostrarConfirmacaoExclusao);
+        sair.addEventListener('click', fechar);
+        conteudo.append(el('div', { class: 'acoes' }, excluir, sair, editar));
+      }
+
+      function mostrarConfirmacaoExclusao() {
+        const aviso = evento.recorrencia === 'nenhuma'
+          ? `Deseja excluir "${evento.titulo}"?`
+          : `Deseja excluir "${evento.titulo}"? Isso remove todas as ocorrências (passadas e futuras).`;
+        conteudo.replaceChildren(
+          el('h3', { text: 'Confirmar exclusão' }),
+          el('p', { text: aviso, style: 'font-size:13px; line-height:1.5; margin:12px 0 0;' })
+        );
+        const voltar = el('button', { class: 'btn neutro', type: 'button', text: 'Voltar' });
+        const confirmar = el('button', { class: 'btn perigoForte', type: 'button', text: 'Excluir' });
+        voltar.addEventListener('click', mostrarDetalhes);
+        confirmar.addEventListener('click', async () => {
+          try {
+            await chamarApi(`/api/calendario/${evento.id}`, { method: 'DELETE' });
+            fechar();
+            atualizarTudo();
+          } catch (erro) {
+            mostrarErro(erro.message);
+          }
+        });
+        conteudo.append(el('div', { class: 'acoes' }, voltar, confirmar));
+      }
+
+      mostrarDetalhes();
+    }
+
+    // ---------- Formulário (novo / editar) ----------
+
+    function abrirFormulario({ data = hojeTexto(), evento = null } = {}) {
+      const editando = !!evento;
+      const valores = evento || {
+        tipo: 'aula', titulo: '', responsavel: '', modalidade_id: '', descricao: '', data_inicio: data,
+        hora_inicio: '', hora_fim: '', recorrencia: 'nenhuma', dias_semana: [], recorrencia_ate: ''
+      };
+      const { conteudo, fechar } = abrirModal({ largura: 520, fecharAoClicarFora: false });
+      let tipo = valores.tipo;
+
+      // Tipo (aula / evento)
+      const botaoAula = el('button', { type: 'button', text: 'Aula' });
+      const botaoEvento = el('button', { type: 'button', text: 'Evento' });
+      const segmentado = el('div', { class: 'segmentado' }, botaoAula, botaoEvento);
+
+      const titulo = el('input', { type: 'text', maxLength: 120, value: valores.titulo || '', placeholder: 'Ex.: Aula de futebol' });
+      const campoModalidade = el('select');
+      campoModalidade.append(el('option', { value: '', text: 'Sem modalidade específica' }));
+      estado.modalidades.forEach((m) => campoModalidade.append(el('option', { value: m.id, text: m.nome })));
+      campoModalidade.value = valores.modalidade_id || '';
+      const blocoModalidade = el('div', {}, el('label', { text: 'Modalidade (opcional)' }), campoModalidade);
+
+      const responsavel = el('input', { type: 'text', maxLength: 120, value: valores.responsavel || '', placeholder: 'Quem coordena ou ministra' });
+      const dataInicio = el('input', { type: 'date', value: valores.data_inicio });
+      const horaInicio = el('input', { type: 'time', value: valores.hora_inicio || '' });
+      const horaFim = el('input', { type: 'time', value: valores.hora_fim || '' });
+
+      // Recorrência (opcional)
+      const recorrencia = el('select');
+      [['nenhuma', 'Não se repete'], ['semanal', 'Toda semana'], ['mensal', 'Todo mês']].forEach(([v, t]) =>
+        recorrencia.append(el('option', { value: v, text: t })));
+      recorrencia.value = valores.recorrencia || 'nenhuma';
+
+      const pilulas = el('div', { class: 'pilulas' });
+      const caixasDias = DIAS_CURTOS.map((nome, indice) => {
+        const caixa = el('input', { type: 'checkbox', value: String(indice) });
+        caixa.checked = (valores.dias_semana || []).includes(indice);
+        const rotulo = el('label', {}, caixa, nome);
+        rotulo.classList.toggle('marcada', caixa.checked);
+        caixa.addEventListener('change', () => rotulo.classList.toggle('marcada', caixa.checked));
+        pilulas.append(rotulo);
+        return caixa;
+      });
+      const blocoDias = el('div', {}, el('label', { text: 'Nos dias' }), pilulas);
+
+      const recorrenciaAte = el('input', { type: 'date', value: valores.recorrencia_ate || '' });
+      const blocoAte = el('div', {}, el('label', { text: 'Repetir até (opcional)' }), recorrenciaAte,
+        el('div', { class: 'dica', text: 'Deixe em branco para repetir sem data final.' }));
+
+      const descricao = el('textarea', { maxLength: 500, value: valores.descricao || '', placeholder: 'Detalhes, local, o que levar…' });
+
+      function diaDaSemanaDaData() {
+        return dataInicio.value ? textoParaData(dataInicio.value).getDay() : null;
+      }
+      function marcarDiaDaDataSeNenhum() {
+        const dia = diaDaSemanaDaData();
+        if (dia !== null && !caixasDias.some((c) => c.checked)) {
+          caixasDias[dia].checked = true;
+          caixasDias[dia].dispatchEvent(new Event('change'));
+        }
+      }
+
+      function atualizarVisibilidade() {
+        botaoAula.className = tipo === 'aula' ? 'ativo aula' : '';
+        botaoEvento.className = tipo === 'evento' ? 'ativo evento' : '';
+        blocoModalidade.style.display = tipo === 'aula' ? 'block' : 'none';
+        blocoDias.style.display = recorrencia.value === 'semanal' ? 'block' : 'none';
+        blocoAte.style.display = recorrencia.value === 'nenhuma' ? 'none' : 'block';
+        if (recorrencia.value === 'semanal') marcarDiaDaDataSeNenhum();
+      }
+      botaoAula.addEventListener('click', () => { tipo = 'aula'; atualizarVisibilidade(); });
+      botaoEvento.addEventListener('click', () => { tipo = 'evento'; atualizarVisibilidade(); });
+      recorrencia.addEventListener('change', atualizarVisibilidade);
+      dataInicio.addEventListener('change', () => { if (recorrencia.value === 'semanal') marcarDiaDaDataSeNenhum(); });
+
+      conteudo.append(el('h3', { text: editando ? 'Editar' : 'Novo no calendário' }));
+      if (editando && valores.recorrencia !== 'nenhuma') {
+        conteudo.append(el('div', { class: 'aviso', text: 'As alterações valem para todas as ocorrências desta série.' }));
+      }
+      conteudo.append(
+        el('label', { text: 'O que é?' }), segmentado,
+        el('label', { text: 'Título *' }), titulo,
+        blocoModalidade,
+        el('label', { text: 'Responsável *' }), responsavel,
+        el('div', { class: 'duas' },
+          el('div', {}, el('label', { text: 'Data *' }), dataInicio),
+          el('div', {}, el('label', { text: 'Início *' }), horaInicio),
+          el('div', {}, el('label', { text: 'Término' }), horaFim)),
+        el('label', { text: 'Repetição' }), recorrencia,
+        blocoDias, blocoAte,
+        el('label', { text: 'Descrição (opcional)' }), descricao
+      );
+
+      const cancelar = el('button', { class: 'btn neutro', type: 'button', text: 'Cancelar' });
+      const salvar = el('button', { class: 'btn primario', type: 'button', text: 'Salvar' });
+      cancelar.addEventListener('click', fechar);
+      salvar.addEventListener('click', async () => {
+        const corpo = {
+          tipo,
+          titulo: titulo.value,
+          modalidade_id: tipo === 'aula' ? campoModalidade.value : '',
+          responsavel: responsavel.value,
+          data_inicio: dataInicio.value,
+          hora_inicio: horaInicio.value,
+          hora_fim: horaFim.value,
+          recorrencia: recorrencia.value,
+          dias_semana: caixasDias.filter((c) => c.checked).map((c) => Number(c.value)),
+          recorrencia_ate: recorrenciaAte.value,
+          descricao: descricao.value
+        };
+        salvar.disabled = true;
+        try {
+          await chamarApi(editando ? `/api/calendario/${evento.id}` : '/api/calendario', {
+            method: editando ? 'PUT' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(corpo)
+          });
+          fechar();
+          // Leva o calendário ao mês do que foi cadastrado, para a pessoa ver o resultado.
+          const d = textoParaData(corpo.data_inicio);
+          estado.ano = d.getFullYear();
+          estado.mes = d.getMonth();
+          atualizarTudo();
+        } catch (erro) {
+          salvar.disabled = false;
+          mostrarErro(erro.message);
+        }
+      });
+      conteudo.append(el('div', { class: 'acoes' }, cancelar, salvar));
+
+      atualizarVisibilidade();
+      titulo.focus();
+    }
+
+    // ---------- Eventos da página ----------
+
+    document.getElementById('grade').addEventListener('click', (e) => {
+      const chip = e.target.closest('.chip');
+      if (chip) { abrirDetalhe(chip.dataset.evento, chip.dataset.data); return; }
+      const celula = e.target.closest('.celula');
+      if (celula) abrirDia(celula.dataset.data);
+    });
+
+    document.getElementById('listaProximos').addEventListener('click', (e) => {
+      const item = e.target.closest('.proximo');
+      if (item) abrirDetalhe(item.dataset.evento, item.dataset.data);
+    });
+
+    document.getElementById('mesAnterior').addEventListener('click', () => {
+      estado.mes -= 1;
+      if (estado.mes < 0) { estado.mes = 11; estado.ano -= 1; }
+      carregarMes();
+    });
+    document.getElementById('mesSeguinte').addEventListener('click', () => {
+      estado.mes += 1;
+      if (estado.mes > 11) { estado.mes = 0; estado.ano += 1; }
+      carregarMes();
+    });
+    document.getElementById('botaoHoje').addEventListener('click', () => {
+      const agora = new Date();
+      estado.ano = agora.getFullYear();
+      estado.mes = agora.getMonth();
+      carregarMes();
+    });
+    document.getElementById('botaoNovo').addEventListener('click', () => abrirFormulario());
+
+    async function iniciar() {
+      montarDiasSemana();
+      try {
+        estado.modalidades = await chamarApi('/api/modalidades');
+      } catch (erro) {
+        mostrarErro(`Não foi possível carregar as modalidades: ${erro.message}`);
+      }
+      await atualizarTudo();
+    }
+
+    iniciar();
+    iniciarLayout();
+  </script>
+</body>
+</html>

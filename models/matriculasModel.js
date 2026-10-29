@@ -26,7 +26,7 @@ function calcularIdade(dataNascimento) {
   return idade;
 }
 
-// RF06: Box aceita adultos; as demais modalidades são só infantis (por ora).
+// RF06: Boxe aceita adultos; as demais modalidades são só infantis (por ora).
 function validarModalidadesParaIdade(dataNascimento, modalidades) {
   const idade = calcularIdade(dataNascimento);
   if (idade === null || idade < 18) return; // sem data ou é criança: sem restrição
