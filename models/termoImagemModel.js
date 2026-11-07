@@ -7,21 +7,23 @@
 const db = require('../db');
 const matriculasModel = require('./matriculasModel');
 
-function buscarDoAlunoNoAnoAtual(alunoId) {
-  const anoLetivo = matriculasModel.anoLetivoAtual();
+// O termo vale entre os anos: a ficha mostra o registro mais recente, de
+// qualquer ano. Mudar o termo num ano novo cria um registro novo (o do ano
+// anterior continua guardado como histórico).
+function buscarMaisRecente(alunoId) {
   return db.prepare(
-    'SELECT * FROM termos_imagem WHERE aluno_id = ? AND ano_letivo_id = ?'
-  ).get(alunoId, anoLetivo.id) || null;
+    'SELECT * FROM termos_imagem WHERE aluno_id = ? ORDER BY ano_letivo_id DESC, id DESC LIMIT 1'
+  ).get(alunoId) || null;
 }
 
 function obterOuCriarRegistro(alunoId) {
-  const existente = buscarDoAlunoNoAnoAtual(alunoId);
-  if (existente) return existente;
+  const existente = buscarMaisRecente(alunoId);
+  const anoAtual = matriculasModel.anoLetivoAtual();
+  if (existente && existente.ano_letivo_id === anoAtual.id) return existente;
 
-  const anoLetivo = matriculasModel.anoLetivoAtual();
   const resultado = db.prepare(
     'INSERT INTO termos_imagem (aluno_id, ano_letivo_id) VALUES (?, ?)'
-  ).run(alunoId, anoLetivo.id);
+  ).run(alunoId, anoAtual.id);
   return { id: resultado.lastInsertRowid };
 }
 
@@ -39,4 +41,4 @@ function registrarArquivo(alunoId, arquivoPath) {
   ).run(arquivoPath, registro.id);
 }
 
-module.exports = { buscarDoAlunoNoAnoAtual, registrarAceiteDigital, registrarArquivo };
+module.exports = { buscarMaisRecente, registrarAceiteDigital, registrarArquivo };

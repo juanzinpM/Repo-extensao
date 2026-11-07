@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rematrícula — Instituto Missão Art</title>
+  <link rel="stylesheet" href="/tema.css">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: #FAF7F4; margin: 0; color: #2A2224; }
+    .area-pagina { padding: 24px 32px; }
+    .cartao { background: #fff; border: 0.5px solid #E7E1DC; border-radius: 8px; padding: 20px; }
+    .aviso { border-radius: 8px; padding: 12px 14px; font-size: 13px; line-height: 1.5; margin-bottom: 16px; background: #EEF3FA; color: #1F3F6B; }
+    .aviso.antecipada { background: #FFF4E0; color: #7A4A00; }
+    .barra { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+    input[type=text], select { padding: 7px 9px; border: 1px solid #D8D1CB; border-radius: 5px; font-size: 13px; font-family: inherit; background: #fff; }
+    input[type=text] { min-width: 240px; }
+    button { padding: 8px 16px; border-radius: 6px; border: none; font-size: 13px; cursor: pointer; font-family: inherit; }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .primario { background: #DB5A61; color: #fff; font-weight: 500; }
+    .suave { background: #F1EFE8; color: #2A2224; }
+    .perigo { background: none; color: #A32D2D; font-size: 12px; padding: 4px 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; color: #9C918C; font-size: 11px; padding: 6px 8px; border-bottom: 0.5px solid #EFE9E4; }
+    td { padding: 9px 8px; border-bottom: 0.5px solid #F3EEEA; vertical-align: middle; }
+    .chip { display: inline-block; margin: 2px 4px 2px 0; padding: 3px 10px; border-radius: 20px; border: 1px solid #D8D1CB; background: #fff; font-size: 12px; cursor: pointer; }
+    .chip.on { background: #DB5A61; border-color: #DB5A61; color: #fff; }
+    .chip:disabled { cursor: default; opacity: 1; }
+    .pill { font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: 20px; white-space: nowrap; }
+    .pill-ok { color: #3B6D11; background: #EAF3DE; }
+    .pill-pend { color: #7A4A00; background: #FFF4E0; }
+    .vazio { color: #6B615D; font-size: 13px; padding: 18px 4px; }
+    a { color: #DB5A61; }
+    @media (max-width: 760px) { .area-pagina { padding: 16px; } .cartao { overflow-x: auto; } }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="areaLogo"><img src="/img/logo.png" alt="Instituto Missão Art"></div>
+      <nav>
+        <a href="/alunos.html">Alunos</a>
+        <a href="/rematricula.html" class="ativo">Rematrícula</a>
+        <a href="/colaboradores.html">Colaboradores</a>
+        <a href="/calendario.html">Calendário</a>
+      </nav>
+    </aside>
+
+    <div class="areaPrincipal">
+      <div id="avisoAmbiente">Ambiente de TESTE — estes dados não são reais e podem ser apagados a qualquer momento.</div>
+      <div class="topbar">
+        <span class="avatar" id="avatarInicial"></span>
+        <span class="nomeUsuario" id="nomeUsuario"></span>
+        <button type="button" class="botaoSair" id="botaoSair">Sair</button>
+      </div>
+
+      <div class="area-pagina">
+        <h1 style="font-size:18px; margin:0 0 12px;" id="titulo">Rematrícula</h1>
+        <div class="aviso" id="aviso"></div>
+
+        <div class="cartao">
+          <div class="barra">
+            <input type="text" id="busca" placeholder="Buscar aluno pelo nome">
+            <select id="filtroSituacao">
+              <option value="">Todos</option>
+              <option value="pendente" selected>Pendentes</option>
+              <option value="rematriculado">Rematriculados</option>
+            </select>
+            <button type="button" class="suave" id="botaoTodos">Marcar todos os pendentes</button>
+            <button type="button" class="suave" id="botaoVerTodos" style="display:none;">Ver todos os alunos</button>
+            <span style="flex:1"></span>
+            <button type="button" class="primario" id="botaoRematricular" disabled>Rematricular selecionados</button>
+          </div>
+          <table>
+            <thead><tr><th></th><th>Aluno</th><th>Modalidades em <span class="anoAlvo"></span></th><th>Situação</th><th>Termo</th><th></th></tr></thead>
+            <tbody id="corpo"></tbody>
+          </table>
+          <div class="vazio" id="vazio" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/erros.js"></script>
+  <script src="/layout.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    function el(tag, atributos, ...filhos) {
+      const e = document.createElement(tag);
+      Object.entries(atributos || {}).forEach(([k, v]) => {
+        if (k === 'text') e.textContent = v;
+        else if (k === 'class') e.className = v;
+        else e.setAttribute(k, v);
+      });
+      filhos.forEach((f) => { if (f !== null && f !== undefined) e.append(f); });
+      return e;
+    }
+
+    let dados = null;          // resposta de /api/rematricula
+    let catalogo = [];         // modalidades
+    const marcados = new Set();           // aluno_id marcados
+    const escolhas = new Map();           // aluno_id -> Set(modalidade_id)
+    const alunoFiltrado = new URLSearchParams(location.search).get('aluno');
+
+    function dialogo(titulo, mensagem, botoes) {
+      return new Promise((resolver) => {
+        const fundo = el('div', { style: 'position:fixed; inset:0; background:rgba(42,37,35,0.45); display:flex; align-items:center; justify-content:center; z-index:1000;' });
+        const linha = el('div', { style: 'display:flex; gap:8px; justify-content:flex-end;' });
+        botoes.forEach(([texto, valor, classe]) => {
+          const b = el('button', { type: 'button', text: texto, class: classe || 'suave' });
+          b.addEventListener('click', () => { fundo.remove(); resolver(valor); });
+          linha.append(b);
+        });
+        fundo.append(el('div', { role: 'dialog', 'aria-modal': 'true', style: 'background:#fff; border-radius:10px; padding:22px; width:380px; max-width:90vw;' },
+          el('strong', { text: titulo, style: 'font-size:14px;' }),
+          el('p', { text: mensagem, style: 'font-size:13px; margin:10px 0 16px; line-height:1.5;' }), linha));
+        document.body.append(fundo);
+      });
+    }
+
+    function escolhaDe(a) {
+      if (!escolhas.has(a.id)) {
+        const base = a.rematriculado ? a.modalidades_alvo : a.modalidades_origem;
+        escolhas.set(a.id, new Set(base));
+      }
+      return escolhas.get(a.id);
+    }
+
+    function visiveis() {
+      const termo = $('busca').value.trim().toLowerCase();
+      const sit = $('filtroSituacao').value;
+      return dados.alunos.filter((a) => {
+        if (alunoFiltrado && String(a.id) !== alunoFiltrado) return false;
+        if (termo && !a.nome.toLowerCase().includes(termo)) return false;
+        if (sit === 'pendente' && a.rematriculado) return false;
+        if (sit === 'rematriculado' && !a.rematriculado) return false;
+        return true;
+      });
+    }
+
+    function atualizarBotao() {
+      const n = marcados.size;
+      $('botaoRematricular').disabled = n === 0;
+      $('botaoRematricular').textContent = n ? `Rematricular selecionados (${n})` : 'Rematricular selecionados';
+    }
+
+    function desenhar() {
+      const corpo = $('corpo');
+      corpo.replaceChildren();
+      const lista = visiveis();
+      $('vazio').style.display = lista.length ? 'none' : 'block';
+      $('vazio').textContent = 'Nenhum aluno para mostrar com este filtro.';
+      lista.forEach((a) => {
+        const sel = escolhaDe(a);
+        const chk = el('input', { type: 'checkbox', 'aria-label': `Selecionar ${a.nome}` });
+        chk.disabled = a.rematriculado;
+        chk.checked = marcados.has(a.id);
+        chk.addEventListener('change', () => { chk.checked ? marcados.add(a.id) : marcados.delete(a.id); atualizarBotao(); });
+
+        const chips = el('td');
+        catalogo.forEach((m) => {
+          const c = el('button', { type: 'button', class: 'chip' + (sel.has(m.id) ? ' on' : ''), text: m.nome });
+          c.disabled = a.rematriculado;
+          c.addEventListener('click', () => { sel.has(m.id) ? sel.delete(m.id) : sel.add(m.id); c.classList.toggle('on'); });
+          chips.append(c);
+        });
+
+        const acoes = el('td', { style: 'white-space:nowrap;' });
+        if (a.rematriculado && dados.antecipada) {
+          const d = el('button', { type: 'button', class: 'perigo', text: 'Desfazer' });
+          d.addEventListener('click', () => desfazer(a));
+          acoes.append(d);
+        }
+        if (!a.rematriculado) {
+          const n = el('button', { type: 'button', class: 'perigo', text: 'Não continua' });
+          n.addEventListener('click', () => naoContinua(a));
+          acoes.append(n);
+        }
+        corpo.append(el('tr', {},
+          el('td', {}, chk),
+          el('td', {}, el('a', { href: `/alunos.html?id=${a.id}`, text: a.nome })),
+          chips,
+          el('td', {}, el('span', { class: 'pill ' + (a.rematriculado ? 'pill-ok' : 'pill-pend'), text: a.rematriculado ? 'Rematriculado' : 'Pendente' })),
+          el('td', { text: a.termo_entregue ? 'Entregue' : 'Pendente' }),
+          acoes));
+      });
+      atualizarBotao();
+    }
+
+    async function rematricular() {
+      const itens = [];
+      for (const a of dados.alunos) {
+        if (!marcados.has(a.id)) continue;
+        const ids = Array.from(escolhaDe(a));
+        if (!ids.length) { mostrarErro(`Escolha ao menos uma modalidade para ${a.nome}.`); return; }
+        itens.push({ aluno_id: a.id, modalidade_ids: ids });
+      }
+      if (dados.antecipada) {
+        const ok = await dialogo('Rematrícula antecipada',
+          `Você está rematriculando ${itens.length} aluno(s) para ${dados.ano_alvo}, que ainda não começou. As modalidades de ${dados.ano_atual} não serão alteradas e isso pode ser desfeito até a virada do ano. Confirmar?`,
+          [['Cancelar', false], ['Confirmar', true, 'primario']]);
+        if (!ok) return;
+      }
+      try {
+        await chamarApi('/api/rematricula', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ itens, confirmar_antecipada: dados.antecipada ? true : undefined }) });
+        marcados.clear();
+        await carregar();
+        await dialogo('Tudo certo', `${itens.length} aluno(s) rematriculado(s) para ${dados.ano_alvo}.`, [['OK', true, 'primario']]);
+      } catch (erro) { mostrarErro(erro.message); }
+    }
+
+    async function desfazer(a) {
+      const ok = await dialogo('Desfazer rematrícula', `Desfazer a rematrícula de ${a.nome} para ${dados.ano_alvo}?`, [['Cancelar', false], ['Desfazer', true, 'primario']]);
+      if (!ok) return;
+      try {
+        await chamarApi(`/api/rematricula/aluno/${a.id}`, { method: 'DELETE' });
+        escolhas.delete(a.id);
+        await carregar();
+      } catch (erro) { mostrarErro(erro.message); }
+    }
+
+    async function naoContinua(a) {
+      const ok = await dialogo('Aluno não continua', `${a.nome} será marcado como inativo. Você pode reativar depois na ficha do aluno. Confirmar?`, [['Cancelar', false], ['Marcar inativo', true, 'primario']]);
+      if (!ok) return;
+      try {
+        await chamarApi(`/api/alunos/${a.id}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'inativo' }) });
+        marcados.delete(a.id);
+        await carregar();
+      } catch (erro) { mostrarErro(erro.message); }
+    }
+
+    async function carregar() {
+      dados = await chamarApi('/api/rematricula');
+      document.querySelectorAll('.anoAlvo').forEach((s) => { s.textContent = dados.ano_alvo; });
+      $('titulo').textContent = `Rematrícula ${dados.ano_alvo}`;
+      const aviso = $('aviso');
+      aviso.className = 'aviso' + (dados.antecipada ? ' antecipada' : '');
+      aviso.textContent = dados.antecipada
+        ? `${dados.ano_alvo} ainda não começou. Rematrículas feitas agora não alteram as modalidades de ${dados.ano_atual} e podem ser desfeitas até 1º de janeiro. Quem não for rematriculado continua como pendente, sem prazo.`
+        : `Rematrícula de ${dados.ano_alvo}. Quem não for rematriculado continua como pendente, sem prazo, e pode ser rematriculado quando quiserem.`;
+      $('botaoVerTodos').style.display = alunoFiltrado ? '' : 'none';
+      if (alunoFiltrado) $('filtroSituacao').value = '';
+      desenhar();
+    }
+
+    async function iniciar() {
+      $('busca').addEventListener('input', desenhar);
+      $('filtroSituacao').addEventListener('change', desenhar);
+      $('botaoVerTodos').addEventListener('click', () => { location.href = '/rematricula.html'; });
+      $('botaoTodos').addEventListener('click', () => {
+        dados.alunos.filter((a) => !a.rematriculado).forEach((a) => marcados.add(a.id));
+        desenhar();
+      });
+      $('botaoRematricular').addEventListener('click', rematricular);
+      try {
+        catalogo = await chamarApi('/api/modalidades');
+        await carregar();
+      } catch (erro) { mostrarErro(erro.message); }
+      iniciarLayout();
+    }
+    iniciar();
+  </script>
+</body>
+</html>

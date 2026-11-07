@@ -1,4 +1,5 @@
 // server.js
+process.env.TZ = process.env.TZ || 'America/Sao_Paulo'; // virada do ano letivo no horário de Brasília
 // Só monta o Express, aplica os middlewares e liga as rotas.
 // Toda a lógica de negócio mora em routes/ e models/.
 const express = require('express');
@@ -44,6 +45,7 @@ app.use('/api', require('./routes/catalogos'));
 app.use('/api/alunos', require('./routes/alunos'));
 app.use('/api/modalidades', require('./routes/modalidades'));
 app.use('/api/calendario', require('./routes/calendario'));
+app.use('/api/rematricula', require('./routes/rematricula'));
 app.use('/api/colaboradores', require('./routes/colaboradores'));
 
 // Precisa ser o ÚLTIMO app.use() — captura qualquer erro lançado nas rotas acima.

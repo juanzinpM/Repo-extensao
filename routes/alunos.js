@@ -203,13 +203,21 @@ router.post('/:id/documentos', exigirAlunoExistente, uploadDocumento, (req, res)
   res.json({ id });
 });
 
-// Regras de convivência: slot próprio (um arquivo por ano letivo).
-router.post('/:id/regras-convivencia', exigirAlunoExistente, uploadDocumento, (req, res) => {
+// Documentos com espaço próprio (regras de convivência, termo de rematrícula):
+// um arquivo por aluno; enviar de novo substitui o anterior.
+function exigirTipoUnicoValido(req, res, next) {
+  if (!documentosModel.TIPOS_UNICOS[req.params.slug]) {
+    throw new ErroApp('Tipo de documento inválido.');
+  }
+  next();
+}
+
+router.post('/:id/documentos-unicos/:slug', exigirAlunoExistente, exigirTipoUnicoValido, uploadDocumento, (req, res) => {
   if (!req.file) {
     throw new ErroApp('Nenhum arquivo enviado.');
   }
   documentosModel.substituirPorTipo(
-    req.params.id, documentosModel.TIPO_REGRAS_CONVIVENCIA, `documentos/${req.file.filename}`
+    req.params.id, documentosModel.TIPOS_UNICOS[req.params.slug], `documentos/${req.file.filename}`
   );
   res.json({ ok: true });
 });
@@ -226,7 +234,7 @@ router.delete('/:id/documentos/:documentoId', (req, res) => {
 // ---------- Termo de uso de imagem ----------
 
 router.get('/:id/termo-imagem', exigirAlunoExistente, (req, res) => {
-  res.json(termoImagemModel.buscarDoAlunoNoAnoAtual(req.params.id) || {});
+  res.json(termoImagemModel.buscarMaisRecente(req.params.id) || {});
 });
 
 router.post('/:id/termo-imagem/aceite', exigirAlunoExistente, (req, res) => {

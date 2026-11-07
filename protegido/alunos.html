@@ -69,6 +69,7 @@
       </div>
       <nav>
         <a href="/alunos.html" class="ativo">Alunos</a>
+        <a href="/rematricula.html">Rematrícula</a>
         <a href="/colaboradores.html">Colaboradores</a>
         <a href="/calendario.html">Calendário</a>
       </nav>
@@ -134,8 +135,20 @@
         <button type="button" id="botaoEnviarTermoImagem" style="background:#F1EFE8; color:#2A2224; margin-top:8px; font-weight:400;">Enviar arquivo assinado</button>
 
         <h2>Regras de convivência</h2>
-        <div id="statusRegras" style="font-size:12px; color:#6B615D; margin-bottom:8px;">Nenhum arquivo anexado ainda.</div>
-        <input type="file" id="inputRegras" accept="image/jpeg,image/png,image/webp,application/pdf">
+        <div class="slotStatus" data-slug="regras-convivencia" style="font-size:12px; color:#6B615D; margin-bottom:8px;">Nenhum arquivo anexado ainda.</div>
+        <input type="file" class="slotInput" data-slug="regras-convivencia" accept="image/jpeg,image/png,image/webp,application/pdf">
+
+        <h2>Termo de rematrícula</h2>
+        <div class="slotStatus" data-slug="termo-rematricula" style="font-size:12px; color:#6B615D; margin-bottom:8px;">Nenhum arquivo anexado ainda.</div>
+        <input type="file" class="slotInput" data-slug="termo-rematricula" accept="image/jpeg,image/png,image/webp,application/pdf">
+
+        <div id="fichaRematricula" style="display:none;">
+          <h2>Rematrícula</h2>
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <span id="textoRematricula" style="font-size:13px;"></span>
+            <a id="linkRematricula" href="#" style="font-size:13px; color:#DB5A61; font-weight:600; text-decoration:none;">Abrir a rematrícula deste aluno</a>
+          </div>
+        </div>
       </div>
 
       <h2>Dados principais</h2>
@@ -462,17 +475,18 @@
     // Arquivos escolhidos antes de o aluno existir (cadastro novo). Ficam na
     // memória do navegador e são enviados logo depois que o aluno é salvo,
     // porque a API de upload precisa do id do aluno.
-    const pendentes = { foto: null, documentos: [], termo: null, regras: null };
-    const TIPO_REGRAS = 'Regras de convivência';
-    let regrasSalva = null; // documento de regras já gravado do aluno aberto
+    const pendentes = { foto: null, documentos: [], termo: null, slots: {} };
+    // Documentos com espaço próprio na ficha (um arquivo por aluno, vale entre os anos).
+    const SLOTS = { 'regras-convivencia': 'Regras de convivência', 'termo-rematricula': 'Termo de rematrícula' };
+    const slotsSalvos = {}; // slug -> documento já gravado do aluno aberto
     let urlFotoPendente = null;
 
     function limparPendentes() {
       pendentes.foto = null;
       pendentes.documentos = [];
       pendentes.termo = null;
-      pendentes.regras = null;
-      regrasSalva = null;
+      pendentes.slots = {};
+      Object.keys(slotsSalvos).forEach((k) => { delete slotsSalvos[k]; });
       if (urlFotoPendente) { URL.revokeObjectURL(urlFotoPendente); urlFotoPendente = null; }
     }
 
@@ -556,70 +570,86 @@
       }
     });
 
-    // Regras de convivência: arquivo já salvo, escolhido e ainda pendente, ou nenhum.
-    function renderizarRegras() {
-      const status = document.getElementById('statusRegras');
+    // Espaços próprios (regras de convivência, termo de rematrícula): arquivo
+    // já salvo, escolhido e ainda pendente, ou nenhum.
+    function botaoRemoverSlot(slug) {
+      const remover = document.createElement('button');
+      remover.type = 'button';
+      remover.className = 'botaoRemover';
+      remover.dataset.removerSlot = slug;
+      remover.textContent = 'Remover';
+      return remover;
+    }
+
+    function renderizarSlot(slug) {
+      const status = document.querySelector(`.slotStatus[data-slug="${slug}"]`);
       status.replaceChildren();
-      if (regrasSalva) {
+      const salvo = slotsSalvos[slug];
+      const pendente = pendentes.slots[slug];
+      if (salvo) {
         const link = document.createElement('a');
-        link.href = `/uploads/${regrasSalva.arquivo_path}`;
+        link.href = `/uploads/${salvo.arquivo_path}`;
         link.target = '_blank';
         link.rel = 'noopener';
         link.textContent = 'ver arquivo';
         link.style.color = '#DB5A61';
-        const remover = document.createElement('button');
-        remover.type = 'button';
-        remover.className = 'botaoRemover';
-        remover.id = 'botaoRemoverRegras';
-        remover.textContent = 'Remover';
-        status.append('Anexado · ', link, ' ', remover);
-      } else if (pendentes.regras) {
-        const remover = document.createElement('button');
-        remover.type = 'button';
-        remover.className = 'botaoRemover';
-        remover.id = 'botaoRemoverRegras';
-        remover.textContent = 'Remover';
-        status.append(`Selecionado: ${pendentes.regras.name} (será enviado ao salvar o aluno) `, remover);
+        status.append(`Anexado (${salvo.ano_letivo}) · `, link, ' ', botaoRemoverSlot(slug));
+      } else if (pendente) {
+        status.append(`Selecionado: ${pendente.name} (será enviado ao salvar o aluno) `, botaoRemoverSlot(slug));
       } else {
         status.textContent = 'Nenhum arquivo anexado ainda.';
       }
     }
 
-    document.getElementById('inputRegras').addEventListener('change', async (evento) => {
-      const arquivo = evento.target.files[0];
-      evento.target.value = '';
-      if (!arquivo || !arquivoValido(arquivo, true)) return;
-      const alunoId = idAlunoAtual();
-      if (!alunoId) {
-        pendentes.regras = arquivo;
-        renderizarRegras();
-        return;
-      }
-      const formData = new FormData();
-      formData.append('arquivo', arquivo);
-      try {
-        await chamarApi(`/api/alunos/${alunoId}/regras-convivencia`, { method: 'POST', body: formData });
-        carregarDocumentos(alunoId);
-      } catch (erro) {
-        mostrarErro(erro.message);
-      }
+    function renderizarSlots() {
+      Object.keys(SLOTS).forEach(renderizarSlot);
+    }
+
+    document.querySelectorAll('.slotInput').forEach((entrada) => {
+      entrada.addEventListener('change', async (evento) => {
+        const slug = entrada.dataset.slug;
+        const arquivo = evento.target.files[0];
+        evento.target.value = '';
+        if (!arquivo || !arquivoValido(arquivo, true)) return;
+        const alunoId = idAlunoAtual();
+        if (!alunoId) {
+          pendentes.slots[slug] = arquivo;
+          renderizarSlot(slug);
+          return;
+        }
+        const formData = new FormData();
+        formData.append('arquivo', arquivo);
+        try {
+          await chamarApi(`/api/alunos/${alunoId}/documentos-unicos/${slug}`, { method: 'POST', body: formData });
+          carregarDocumentos(alunoId);
+        } catch (erro) {
+          mostrarErro(erro.message);
+        }
+      });
     });
 
-    document.getElementById('statusRegras').addEventListener('click', async (evento) => {
-      if (evento.target.id !== 'botaoRemoverRegras') return;
-      const alunoId = idAlunoAtual();
-      try {
-        if (alunoId && regrasSalva) {
-          await chamarApi(`/api/alunos/${alunoId}/documentos/${regrasSalva.id}`, { method: 'DELETE' });
-          carregarDocumentos(alunoId);
-        } else {
-          pendentes.regras = null;
-          renderizarRegras();
+    document.querySelectorAll('.slotStatus').forEach((area) => {
+      area.addEventListener('click', async (evento) => {
+        const slug = evento.target.dataset && evento.target.dataset.removerSlot;
+        if (!slug) return;
+        const alunoId = idAlunoAtual();
+        try {
+          if (alunoId && slotsSalvos[slug]) {
+            await chamarApi(`/api/alunos/${alunoId}/documentos/${slotsSalvos[slug].id}`, { method: 'DELETE' });
+            carregarDocumentos(alunoId);
+          } else {
+            delete pendentes.slots[slug];
+            renderizarSlot(slug);
+          }
+        } catch (erro) {
+          mostrarErro(erro.message);
         }
-      } catch (erro) {
-        mostrarErro(erro.message);
-      }
+      });
     });
+
+    function escaparHtml(texto) {
+      return String(texto).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
 
     function renderizarDocumentosPendentes() {
       const container = document.getElementById('listaDocumentos');
@@ -642,14 +672,19 @@
       const container = document.getElementById('listaDocumentos');
       try {
         let documentos = await chamarApi(`/api/alunos/${alunoId}/documentos`);
-        regrasSalva = documentos.find((doc) => doc.tipo === TIPO_REGRAS) || null;
-        renderizarRegras();
-        documentos = documentos.filter((doc) => doc.tipo !== TIPO_REGRAS);
+        Object.keys(slotsSalvos).forEach((k) => { delete slotsSalvos[k]; });
+        const tiposDosSlots = Object.entries(SLOTS);
+        tiposDosSlots.forEach(([slug, tipo]) => {
+          const doc = documentos.find((d) => d.tipo === tipo);
+          if (doc) slotsSalvos[slug] = doc;
+        });
+        renderizarSlots();
+        documentos = documentos.filter((doc) => !tiposDosSlots.some(([, tipo]) => tipo === doc.tipo));
         container.innerHTML = documentos.length === 0
           ? 'Nenhum documento anexado ainda.'
           : documentos.map((doc) => `
               <div class="itemDocumento">
-                <span><strong>${doc.tipo}</strong> — <a href="/uploads/${doc.arquivo_path}" target="_blank" rel="noopener">ver arquivo</a></span>
+                <span><strong>${escaparHtml(doc.tipo)}</strong> (${doc.ano_letivo}) — <a href="/uploads/${encodeURI(doc.arquivo_path)}" target="_blank" rel="noopener">ver arquivo</a></span>
                 <button type="button" class="botaoRemover" data-remover-documento="${doc.id}">Remover</button>
               </div>
             `).join('');
@@ -878,10 +913,10 @@
         f.append('arquivo', doc.arquivo);
         await enviar(`documento "${doc.tipo}"`, `/api/alunos/${alunoId}/documentos`, f);
       }
-      if (pendentes.regras) {
+      for (const [slug, arquivo] of Object.entries(pendentes.slots)) {
         const f = new FormData();
-        f.append('arquivo', pendentes.regras);
-        await enviar('regras de convivência', `/api/alunos/${alunoId}/regras-convivencia`, f);
+        f.append('arquivo', arquivo);
+        await enviar(SLOTS[slug].toLowerCase(), `/api/alunos/${alunoId}/documentos-unicos/${slug}`, f);
       }
       if (pendentes.termo && pendentes.termo.aceite) {
         await enviar('termo de imagem', `/api/alunos/${alunoId}/termo-imagem/aceite`);
@@ -1076,7 +1111,8 @@
       limparPendentes();
       renderizarFoto(null);
       renderizarDocumentosPendentes();
-      renderizarRegras();
+      renderizarSlots();
+      document.getElementById('fichaRematricula').style.display = 'none';
       renderizarTermoPendente();
       ['inputFoto', 'tipoDocumento', 'inputDocumento', 'inputTermoImagem'].forEach((id) => { document.getElementById(id).value = ''; });
       document.getElementById('blocoRematricula').innerHTML = '';
@@ -1191,6 +1227,22 @@
 
     // Carrega a ficha de um aluno no formulário (usada ao clicar na lista
     // e também ao salvar uma edição, para continuar na página do mesmo aluno).
+    // Situação da rematrícula do aluno aberto, com atalho para a tela de rematrícula.
+    async function carregarRematriculaDaFicha(alunoId) {
+      const bloco = document.getElementById('fichaRematricula');
+      bloco.style.display = 'none';
+      try {
+        const r = await chamarApi(`/api/rematricula/aluno/${alunoId}`);
+        if (!r.elegivel) return;
+        document.getElementById('textoRematricula').textContent =
+          `Rematrícula ${r.ano_alvo}: ${r.rematriculado ? 'rematriculado' : 'pendente'}`;
+        document.getElementById('linkRematricula').href = `/rematricula.html?aluno=${alunoId}`;
+        bloco.style.display = 'block';
+      } catch (erro) {
+        // Informação complementar: se falhar, a ficha continua funcionando.
+      }
+    }
+
     async function abrirAluno(id) {
       let aluno;
       try {
@@ -1201,6 +1253,7 @@
       }
 
       document.getElementById('alunoId').value = aluno.id;
+      carregarRematriculaDaFicha(aluno.id);
       camposTexto.forEach((campo) => { document.getElementById(campo).value = aluno[campo] || ''; });
       preservarValoresAntigosDosSelects(aluno);
       reaplicarMascaras(document);
@@ -1314,6 +1367,8 @@
     criarLinhaResponsavel();
     carregarLista();
     iniciarLayout();
+    const idNaUrl = new URLSearchParams(location.search).get('id');
+    if (idNaUrl) abrirAluno(Number(idNaUrl));
   </script>
 </body>
 </html>

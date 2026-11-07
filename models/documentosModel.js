@@ -7,11 +7,14 @@ const db = require('../db');
 const matriculasModel = require('./matriculasModel');
 const { PASTA_UPLOADS } = require('../config');
 
+// Os documentos valem entre os anos letivos: a ficha mostra tudo o que já foi
+// anexado, com o ano em que cada arquivo foi enviado.
 function listarPorAluno(alunoId) {
-  const anoLetivo = matriculasModel.anoLetivoAtual();
-  return db.prepare(
-    'SELECT * FROM documentos WHERE aluno_id = ? AND ano_letivo_id = ? ORDER BY data_upload DESC'
-  ).all(alunoId, anoLetivo.id);
+  return db.prepare(`
+    SELECT d.*, al.ano AS ano_letivo FROM documentos d
+    JOIN anos_letivos al ON al.id = d.ano_letivo_id
+    WHERE d.aluno_id = ? ORDER BY d.data_upload DESC, d.id DESC
+  `).all(alunoId);
 }
 
 function buscarPorId(id) {
@@ -26,15 +29,17 @@ function criar(alunoId, tipo, arquivoPath) {
   return resultado.lastInsertRowid;
 }
 
-// Regras de convivência: um arquivo por aluno em cada ano letivo. Enviar de
-// novo substitui o anterior (e apaga o arquivo antigo do disco).
-const TIPO_REGRAS_CONVIVENCIA = 'Regras de convivência';
+// Documentos com espaço próprio na ficha (um arquivo por aluno). Enviar de
+// novo substitui o anterior, de qualquer ano, e apaga o arquivo antigo.
+const TIPOS_UNICOS = {
+  'regras-convivencia': 'Regras de convivência',
+  'termo-rematricula': 'Termo de rematrícula'
+};
 
 function substituirPorTipo(alunoId, tipo, arquivoPath) {
-  const anoLetivo = matriculasModel.anoLetivoAtual();
   const antigos = db.prepare(
-    'SELECT * FROM documentos WHERE aluno_id = ? AND ano_letivo_id = ? AND tipo = ?'
-  ).all(alunoId, anoLetivo.id, tipo);
+    'SELECT * FROM documentos WHERE aluno_id = ? AND tipo = ?'
+  ).all(alunoId, tipo);
   antigos.forEach(remover);
   return criar(alunoId, tipo, arquivoPath);
 }
@@ -46,4 +51,4 @@ function remover(documento) {
   db.prepare('DELETE FROM documentos WHERE id = ?').run(documento.id);
 }
 
-module.exports = { TIPO_REGRAS_CONVIVENCIA, listarPorAluno, buscarPorId, criar, substituirPorTipo, remover };
+module.exports = { TIPOS_UNICOS, listarPorAluno, buscarPorId, criar, substituirPorTipo, remover };
